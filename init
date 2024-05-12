@@ -13,9 +13,9 @@ if id -u $PUID > /dev/null 2>&1 && id -g $PGID > /dev/null 2>&1; then
     chown $PUID:$PGID /movies
     chown $PUID:$PGID /series
     chown $PUID:$PGID /transcode
-    su -m $PUID -c 'python src/init_db.py'
+    su -m $PUID -c './src/main'  # Run the Go application as the specified user
 else
-    python src/init_db.py
+    ./src/main  # Run the Go application
 fi
 
 touch /config/restart.txt
@@ -25,15 +25,15 @@ last_restart_modified=$(stat -c %Y /config/restart.txt)
 last_shutdown_modified=$(stat -c %Y /config/shutdown.txt)
 
 while true; do
-    APP_PORT=$(python -c 'from startup.get_port import get_port; print(get_port())')
+    APP_PORT=8080  # Set the port for the Go application
 
     if id -u $PUID > /dev/null 2>&1 && id -g $PGID > /dev/null 2>&1; then
-        su -m $PUID -c 'uvicorn src.main:app --host 0.0.0.0 --port '"$APP_PORT" &
+        su -m $PUID -c './src/main --port '"$APP_PORT" &
     else
-        uvicorn src.main:app --host 0.0.0.0 --port $APP_PORT &
+        ./src/main --port $APP_PORT &
     fi
 
-    uvicorn_pid=$!
+    app_pid=$!
 
     while true; do
         sleep 1
@@ -41,12 +41,12 @@ while true; do
         new_shutdown_modified=$(stat -c %Y /config/shutdown.txt)
         if [ "$new_restart_modified" != "$last_restart_modified" ]; then
             last_restart_modified=$new_restart_modified
-            kill $uvicorn_pid
-            wait $uvicorn_pid
+            kill $app_pid
+            wait $app_pid
             break
         elif [ "$new_shutdown_modified" != "$last_shutdown_modified" ]; then
-            kill $uvicorn_pid
-            wait $uvicorn_pid
+            kill $app_pid
+            wait $app_pid
             exit 0
         fi
     done

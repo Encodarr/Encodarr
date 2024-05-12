@@ -11,6 +11,7 @@ async def verify_folders():
     root_folder_path = await get_root_folder()
     paths = []
     config_folder_path = root_folder_path + '/config'
+    paths.append(config_folder_path)
     paths.append(config_folder_path + '/artwork/series')
     paths.append(config_folder_path + '/artwork/movies')
     paths.append(config_folder_path + '/db')

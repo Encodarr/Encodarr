@@ -10,7 +10,7 @@ from src.services.logging_service import start_logger
 from src.services.metadata_service import metadata_service
 from src.services.scan_service import scan_service
 from src.services.watchdog_service import start_watchdog
-from src.utils.folders import get_root_folder
+from src.utils.folders import get_root_folder, verify_folders
 from fastapi.openapi.utils import get_openapi
 
 
@@ -43,6 +43,7 @@ async def write_uptime_to_db():
 
 async def startup():
     from src.main import app
+    await verify_folders()
     app.mount("/static", StaticFiles(directory="frontend/dist"), name="static")
     log_level = (await get_all_settings()).get('log_level', '')
     start_logger(log_level)

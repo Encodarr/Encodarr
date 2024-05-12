@@ -7,20 +7,22 @@ COPY frontend/ ./
 RUN npm run build
 
 # Stage 2: Build the FastAPI backend
-FROM python:alpine as backend
-WORKDIR /
+FROM golang:alpine as backend
+WORKDIR /src
 COPY src /src
+RUN go mod download
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
+
 
 # Stage 3: Combine frontend and backend
-FROM python:alpine
+FROM alpine:latest
 WORKDIR /
 COPY --from=frontend /frontend/dist /frontend/dist
 COPY --from=backend /src /src
 
-# Stage 4: Install python requirements and ffmpeg
+# Stage 4: Install ffmpeg
 RUN apk add --no-cache --update \
     ffmpeg \
-    && pip install --no-cache-dir -r src/requirements.txt \
     && rm -rf /var/cache/apk/*
 
 # Stage 5: Copy the init script and execute
