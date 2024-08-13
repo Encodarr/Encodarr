@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"strconv"
 	"transfigurr/models"
 	"transfigurr/repository"
 
@@ -30,7 +31,13 @@ func (ctrl *ProfileController) GetProfiles(c *gin.Context) {
 
 func (ctrl *ProfileController) GetProfileById(c *gin.Context) {
 	profileId := c.Param("profileId")
-	profile, err := ctrl.Repo.GetProfileById(profileId)
+	profileIdInt, err := strconv.Atoi(profileId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid profile ID"})
+		return
+	}
+
+	profile, err := ctrl.Repo.GetProfileById(profileIdInt)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Profile not found"})
 		return
@@ -43,12 +50,18 @@ func (ctrl *ProfileController) UpsertProfile(c *gin.Context) {
 	var inputProfile models.Profile
 	profileId := c.Param("profileId")
 
+	profileIdInt, err := strconv.Atoi(profileId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid profile ID"})
+		return
+	}
+
 	if err := c.ShouldBindJSON(&inputProfile); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 
-	profile, err := ctrl.Repo.UpsertProfile(profileId, inputProfile)
+	profile, err := ctrl.Repo.UpsertProfile(profileIdInt, inputProfile)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error updating profile"})
 		return
@@ -60,7 +73,13 @@ func (ctrl *ProfileController) UpsertProfile(c *gin.Context) {
 func (ctrl *ProfileController) DeleteProfileById(c *gin.Context) {
 	profileId := c.Param("profileId")
 
-	err := ctrl.Repo.DeleteProfileById(profileId)
+	profileIdInt, err := strconv.Atoi(profileId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid profile ID"})
+		return
+	}
+
+	err = ctrl.Repo.DeleteProfileById(profileIdInt)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Profile not found"})
 		return

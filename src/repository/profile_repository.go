@@ -18,21 +18,21 @@ func NewProfileRepository(db *gorm.DB) *ProfileRepository {
 
 func (repo *ProfileRepository) GetAllProfiles() ([]models.Profile, error) {
 	var profiles []models.Profile
-	if err := repo.DB.Find(&profiles).Error; err != nil {
+	if err := repo.DB.Preload("ProfileAudioLanguages").Preload("ProfileSubtitleLanguages").Find(&profiles).Error; err != nil {
 		return nil, err
 	}
 	return profiles, nil
 }
 
-func (repo *ProfileRepository) GetProfileById(profileId string) (models.Profile, error) {
+func (repo *ProfileRepository) GetProfileById(profileId int) (models.Profile, error) {
 	var profile models.Profile
-	if err := repo.DB.Where("id = ?", profileId).First(&profile).Error; err != nil {
+	if err := repo.DB.Preload("ProfileAudioLanguages").Preload("ProfileSubtitleLanguages").Where("id = ?", profileId).First(&profile).Error; err != nil {
 		return models.Profile{}, err
 	}
 	return profile, nil
 }
 
-func (repo *ProfileRepository) UpsertProfile(profileId string, inputProfile models.Profile) (models.Profile, error) {
+func (repo *ProfileRepository) UpsertProfile(profileId int, inputProfile models.Profile) (models.Profile, error) {
 	var profile models.Profile
 	result := repo.DB.Where("id = ?", profileId).First(&profile)
 	if result.RecordNotFound() {
@@ -49,7 +49,7 @@ func (repo *ProfileRepository) UpsertProfile(profileId string, inputProfile mode
 	return profile, nil
 }
 
-func (repo *ProfileRepository) DeleteProfileById(profileId string) error {
+func (repo *ProfileRepository) DeleteProfileById(profileId int) error {
 	var profile models.Profile
 	if err := repo.DB.Where("id = ?", profileId).First(&profile).Error; err != nil {
 		return err

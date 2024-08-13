@@ -10,7 +10,7 @@ import (
 func EpisodeRoutes(rg *gin.RouterGroup, episodeRepo *repository.EpisodeRepository) {
 	controller := controllers.NewEpisodeController(episodeRepo)
 	rg.GET("/series/:seriesId/seasons/:seasonNumber/episodes", controller.GetEpisodes)
-	rg.GET("/series/:seriesId/seasons/:seasonNumber/episodes/:episodeNumber", controller.GetEpisodeById)
+	rg.GET("/series/:seriesId/seasons/:seasonNumber/episodes/:episodeNumber", controller.GetEpisodeBySeriesSeasonEpisode)
 	rg.PUT("/series/:seriesId/seasons/:seasonNumber/episodes/:episodeNumber", controller.UpsertEpisode)
 	rg.DELETE("/series/:seriesId/seasons/:seasonNumber/episodes/:episodeNumber", controller.DeleteEpisodeById)
 }

@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"strconv"
 	"transfigurr/models"
 
 	"github.com/jinzhu/gorm"
@@ -24,9 +25,9 @@ func (repo *SeasonRepository) GetSeasons(seriesId string) ([]models.Season, erro
 	return seasons, nil
 }
 
-func (repo *SeasonRepository) UpsertSeason(seriesId string, seasonNumber string, inputSeason models.Season) (models.Season, error) {
+func (repo *SeasonRepository) UpsertSeason(seriesId string, seasonNumber int, inputSeason models.Season) (models.Season, error) {
 	var season models.Season
-	inputSeason.Id = seriesId + seasonNumber
+	inputSeason.Id = seriesId + strconv.Itoa(seasonNumber)
 	inputSeason.SeriesId = seriesId
 	result := repo.DB.Where("series_id = ? AND season_number = ?", seriesId, seasonNumber).First(&season)
 
@@ -44,7 +45,7 @@ func (repo *SeasonRepository) UpsertSeason(seriesId string, seasonNumber string,
 	return season, nil
 }
 
-func (repo *SeasonRepository) GetSeasonById(seriesId string, seasonNumber string) (models.Season, error) {
+func (repo *SeasonRepository) GetSeasonById(seriesId string, seasonNumber int) (models.Season, error) {
 	var season models.Season
 	if err := repo.DB.Where("series_id = ? AND season_number = ?", seriesId, seasonNumber).First(&season).Error; err != nil {
 		return models.Season{}, err
@@ -52,7 +53,7 @@ func (repo *SeasonRepository) GetSeasonById(seriesId string, seasonNumber string
 	return season, nil
 }
 
-func (repo *SeasonRepository) DeleteSeasonById(seriesId string, seasonNumber string) error {
+func (repo *SeasonRepository) DeleteSeasonById(seriesId string, seasonNumber int) error {
 	var season models.Season
 	if err := repo.DB.Where("series_id = ? AND season_number = ?", seriesId, seasonNumber).First(&season).Error; err != nil {
 		return err

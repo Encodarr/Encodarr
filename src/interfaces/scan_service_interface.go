@@ -1,4 +1,3 @@
-// interfaces/scan_service.go
 package interfaces
 
 import "transfigurr/models"

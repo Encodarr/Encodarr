@@ -18,7 +18,7 @@ func NewSeriesRepository(db *gorm.DB) *SeriesRepository {
 
 func (repo *SeriesRepository) GetSeries() ([]models.Series, error) {
 	var seriesList []models.Series
-	if err := repo.DB.Find(&seriesList).Error; err != nil {
+	if err := repo.DB.Preload("Seasons").Find(&seriesList).Error; err != nil {
 		return nil, err
 	}
 	return seriesList, nil
@@ -45,7 +45,7 @@ func (repo *SeriesRepository) UpsertSeries(id string, inputSeries models.Series)
 
 func (repo *SeriesRepository) GetSeriesByID(id string) (models.Series, error) {
 	var series models.Series
-	if err := repo.DB.Where("id = ?", id).First(&series).Error; err != nil {
+	if err := repo.DB.Preload("Seasons.Episodes").Where("id = ?", id).First(&series).Error; err != nil {
 		return models.Series{}, err
 	}
 	return series, nil

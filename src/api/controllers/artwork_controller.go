@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -19,7 +18,6 @@ func NewArtworkController() *ArtworkController {
 func (a *ArtworkController) GetSeriesBackdrop(c *gin.Context) {
 	seriesId := c.Param("seriesId")
 	filePath := filepath.Join(constants.ArtworkPath, "series", seriesId, "backdrop.webp")
-	log.Print(filePath)
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		c.JSON(http.StatusNotFound, gin.H{"detail": "Backdrop not found"})
 		return

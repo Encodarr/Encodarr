@@ -16,10 +16,19 @@ func NewSettingRepository(db *gorm.DB) *SettingRepository {
 	}
 }
 
-func (repo *SettingRepository) GetAllSettings() ([]models.Setting, error) {
+func (repo *SettingRepository) GetAllSettings() (map[string]models.Setting, error) {
 	var settings []models.Setting
 	err := repo.DB.Find(&settings).Error
-	return settings, err
+	if err != nil {
+		return nil, err
+	}
+
+	settingMap := make(map[string]models.Setting)
+	for _, setting := range settings {
+		settingMap[setting.Id] = setting
+	}
+
+	return settingMap, nil
 }
 
 func (repo *SettingRepository) GetSettingById(id string) (models.Setting, error) {

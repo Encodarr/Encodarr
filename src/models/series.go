@@ -2,20 +2,21 @@ package models
 
 type Series struct {
 	BaseModel
-	Id              string `gorm:"primary_key"`
-	Name            string `gorm:"type:varchar(255)"`
-	ReleaseDate     string `gorm:"type:varchar(255)"`
-	Genre           string `gorm:"type:varchar(255)"`
-	Status          string `gorm:"type:varchar(255)"`
-	LastAirDate     string `gorm:"type:varchar(255)"`
-	Networks        string `gorm:"type:varchar(255)"`
-	Overview        string `gorm:"type:text"`
-	ProfileID       int    `gorm:"type:int"`
-	Monitored       bool   `gorm:"type:boolean"`
-	EpisodeCount    int    `gorm:"type:int"`
-	Size            int    `gorm:"type:int"`
-	SeasonsCount    int    `gorm:"type:int"`
-	SpaceSaved      int    `gorm:"type:int"`
-	MissingEpisodes int    `gorm:"type:int"`
-	Runtime         int    `gorm:"type:int"`
+	Id              string   `gorm:"primary_key" json:"id"`
+	Name            string   `gorm:"type:varchar(255)" json:"name"`
+	ReleaseDate     string   `gorm:"type:varchar(255)" json:"releaseDate"`
+	Genre           string   `gorm:"type:varchar(255)" json:"genre"`
+	Status          string   `gorm:"type:varchar(255)" json:"status"`
+	LastAirDate     string   `gorm:"type:varchar(255)" json:"lastAirDate"`
+	Networks        string   `gorm:"type:varchar(255)" json:"networks"`
+	Overview        string   `gorm:"type:text" json:"overview"`
+	ProfileID       int      `gorm:"type:int" json:"profileId"`
+	Monitored       bool     `gorm:"type:boolean" json:"monitored"`
+	EpisodeCount    int      `gorm:"type:int" json:"episodeCount"`
+	Size            int      `gorm:"type:int" json:"size"`
+	SeasonsCount    int      `gorm:"type:int" json:"seasonsCount"`
+	SpaceSaved      int      `gorm:"type:int" json:"spaceSaved"`
+	MissingEpisodes int      `gorm:"type:int" json:"missingEpisodes"`
+	Runtime         int      `gorm:"type:int" json:"runtime"`
+	Seasons         []Season `gorm:"foreignkey:SeriesId" json:"seasons"`
 }

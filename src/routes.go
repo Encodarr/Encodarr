@@ -10,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRouter(scanService interfaces.ScanServiceInterface, seriesRepo *repository.SeriesRepository, seasonRepo *repository.SeasonRepository, episodeRepo *repository.EpisodeRepository, movieRepo *repository.MovieRepository, settingRepo *repository.SettingRepository, systemRepo *repository.SystemRepository, profileRepo *repository.ProfileRepository, authRepo *repository.AuthRepository, userRepo *repository.UserRepository, historyRepo *repository.HistoryRepository, eventRepo *repository.EventRepository, codecRepo *repository.CodecRepository) *gin.Engine {
+func SetupRouter(scanService interfaces.ScanServiceInterface, encodeService interfaces.EncodeServiceInterface, seriesRepo *repository.SeriesRepository, seasonRepo *repository.SeasonRepository, episodeRepo *repository.EpisodeRepository, movieRepo *repository.MovieRepository, settingRepo *repository.SettingRepository, systemRepo *repository.SystemRepository, profileRepo *repository.ProfileRepository, authRepo *repository.AuthRepository, userRepo *repository.UserRepository, historyRepo *repository.HistoryRepository, eventRepo *repository.EventRepository, codecRepo *repository.CodecRepository) *gin.Engine {
 	//gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 	api := router.Group("/api")
@@ -28,6 +28,8 @@ func SetupRouter(scanService interfaces.ScanServiceInterface, seriesRepo *reposi
 	routes.CodecRoutes(api, codecRepo)
 	routes.ActionRoutes(api, scanService)
 	routes.ArtworkRoutes(api)
+
+	routes.WebsocketRoutes(api, encodeService, seriesRepo, movieRepo, profileRepo, settingRepo, systemRepo, historyRepo, eventRepo, codecRepo)
 
 	router.StaticFS("/app", http.Dir(constants.FrontendDistPath))
 	router.NoRoute(func(c *gin.Context) {

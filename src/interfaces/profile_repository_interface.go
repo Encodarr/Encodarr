@@ -4,7 +4,7 @@ import "transfigurr/models"
 
 type ProfileRepositoryInterface interface {
 	GetAllProfiles() ([]models.Profile, error)
-	GetProfileById(id string) (models.Profile, error)
-	UpsertProfile(profileId string, inputProfile models.Profile) (models.Profile, error)
-	DeleteProfileById(profileId string) error
+	GetProfileById(id int) (models.Profile, error)
+	UpsertProfile(profileId int, inputProfile models.Profile) (models.Profile, error)
+	DeleteProfileById(profileId int) error
 }

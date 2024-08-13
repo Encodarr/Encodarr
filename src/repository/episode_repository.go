@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"strconv"
 	"transfigurr/models"
 
 	"github.com/jinzhu/gorm"
@@ -16,7 +17,7 @@ func NewEpisodeRepository(db *gorm.DB) *EpisodeRepository {
 	}
 }
 
-func (repo *EpisodeRepository) GetEpisodes(seriesId string, seasonNumber string) ([]models.Episode, error) {
+func (repo *EpisodeRepository) GetEpisodes(seriesId string, seasonNumber int) ([]models.Episode, error) {
 	var episodes []models.Episode
 	if err := repo.DB.Where("series_id = ? AND season_number = ?", seriesId, seasonNumber).Find(&episodes).Error; err != nil {
 		return nil, err
@@ -24,11 +25,11 @@ func (repo *EpisodeRepository) GetEpisodes(seriesId string, seasonNumber string)
 	return episodes, nil
 }
 
-func (repo *EpisodeRepository) UpsertEpisode(seriesId string, seasonNumber string, episodeNumber string, inputEpisode models.Episode) (models.Episode, error) {
+func (repo *EpisodeRepository) UpsertEpisode(seriesId string, seasonNumber int, episodeNumber int, inputEpisode models.Episode) (models.Episode, error) {
 	var episode models.Episode
-	inputEpisode.Id = seriesId + seasonNumber + episodeNumber
+	inputEpisode.Id = seriesId + strconv.Itoa(seasonNumber) + strconv.Itoa(episodeNumber)
 	inputEpisode.SeriesId = seriesId
-	result := repo.DB.Where("series_id = ? AND season_number = ? AND episode_number = ?", seriesId, seasonNumber, episodeNumber).First(&episode)
+	result := repo.DB.Where("id = ?", seriesId+strconv.Itoa(seasonNumber)+strconv.Itoa(episodeNumber)).First(&episode)
 
 	if result.RecordNotFound() {
 		episode = inputEpisode
@@ -44,7 +45,15 @@ func (repo *EpisodeRepository) UpsertEpisode(seriesId string, seasonNumber strin
 	return episode, nil
 }
 
-func (repo *EpisodeRepository) GetEpisodeById(seriesId string, seasonNumber string, episodeNumber string) (models.Episode, error) {
+func (repo *EpisodeRepository) GetEpisodeById(episodeId string) (models.Episode, error) {
+	var episode models.Episode
+	if err := repo.DB.Where("id = ?", episodeId).First(&episode).Error; err != nil {
+		return models.Episode{}, err
+	}
+	return episode, nil
+}
+
+func (repo *EpisodeRepository) GetEpisodeBySeriesSeasonEpisode(seriesId string, seasonNumber int, episodeNumber int) (models.Episode, error) {
 	var episode models.Episode
 	if err := repo.DB.Where("series_id = ? AND season_number = ? AND episode_number = ?", seriesId, seasonNumber, episodeNumber).First(&episode).Error; err != nil {
 		return models.Episode{}, err
@@ -52,7 +61,7 @@ func (repo *EpisodeRepository) GetEpisodeById(seriesId string, seasonNumber stri
 	return episode, nil
 }
 
-func (repo *EpisodeRepository) DeleteEpisodeById(seriesId string, seasonNumber string, episodeNumber string) error {
+func (repo *EpisodeRepository) DeleteEpisodeById(seriesId string, seasonNumber int, episodeNumber int) error {
 	var episode models.Episode
 	if err := repo.DB.Where("series_id = ? AND season_number = ? AND episode_number = ?", seriesId, seasonNumber, episodeNumber).First(&episode).Error; err != nil {
 		return err

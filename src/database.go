@@ -21,6 +21,7 @@ func InitDB(db *gorm.DB) {
 	db.AutoMigrate(&models.Setting{})
 	db.AutoMigrate(&models.System{})
 	db.AutoMigrate(&models.User{})
+	db.AutoMigrate(&models.Log{})
 }
 
 func SeedDB(db *gorm.DB) {

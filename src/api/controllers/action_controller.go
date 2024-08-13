@@ -38,6 +38,8 @@ func (ctrl ActionController) RefreshSeriesMetadata(c *gin.Context) {
 }
 
 func (ctrl ActionController) ScanSeries(c *gin.Context) {
+	ctrl.scanService.Enqueue(models.Item{Id: c.Param("series_id"), Type: "series"})
+	c.JSON(200, gin.H{"message": "Scan enqueued"})
 
 }
 
@@ -46,6 +48,6 @@ func (ctrl ActionController) RefreshMovieMetadata(c *gin.Context) {
 }
 
 func (ctrl ActionController) ScanMovie(c *gin.Context) {
-	ctrl.scanService.Enqueue(models.Item{Id: "movie", Type: c.Param("movie_id")})
+	ctrl.scanService.Enqueue(models.Item{Id: c.Param("movie_id"), Type: "movie"})
 	c.JSON(200, gin.H{"message": "Scan enqueued"})
 }
