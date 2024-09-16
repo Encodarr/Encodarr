@@ -2,12 +2,12 @@ package routes
 
 import (
 	"transfigurr/api/controllers"
-	"transfigurr/repository"
+	"transfigurr/interfaces"
 
 	"github.com/gin-gonic/gin"
 )
 
-func SystemRoutes(rg *gin.RouterGroup, systemRepo *repository.SystemRepository) {
+func SystemRoutes(rg *gin.RouterGroup, systemRepo interfaces.SystemRepositoryInterface) {
 	controller := controllers.NewSystemController(systemRepo)
 	rg.GET("/systems", controller.GetSystems)
 	rg.GET("/systems/:systemId", controller.GetSystemById)

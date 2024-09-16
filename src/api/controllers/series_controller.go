@@ -3,17 +3,17 @@ package controllers
 import (
 	"log"
 	"net/http"
+	"transfigurr/interfaces"
 	"transfigurr/models"
-	"transfigurr/repository"
 
 	"github.com/gin-gonic/gin"
 )
 
 type SeriesController struct {
-	Repo *repository.SeriesRepository
+	Repo interfaces.SeriesRepositoryInterface
 }
 
-func NewSeriesController(repo *repository.SeriesRepository) *SeriesController {
+func NewSeriesController(repo interfaces.SeriesRepositoryInterface) *SeriesController {
 	return &SeriesController{
 		Repo: repo,
 	}

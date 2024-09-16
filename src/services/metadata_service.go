@@ -4,16 +4,17 @@ import (
 	"fmt"
 	"log"
 	"sync"
-	"time"
 	"transfigurr/interfaces"
 	"transfigurr/models"
 	"transfigurr/utils"
 )
 
 type MetadataService struct {
-	metadataQueue chan models.Item
+	metadataQueue []models.Item
 	metadataSet   map[string]struct{}
 	mu            sync.Mutex
+	cond          *sync.Cond
+	eventService  interfaces.EventServiceInterface
 	seriesRepo    interfaces.SeriesRepositoryInterface
 	seasonRepo    interfaces.SeasonRepositoryInterface
 	episodeRepo   interfaces.EpisodeRepositoryInterface
@@ -28,10 +29,11 @@ type MetadataService struct {
 	codecRepo     interfaces.CodecRepositoryInterface
 }
 
-func NewMetadataService(seriesRepo interfaces.SeriesRepositoryInterface, seasonRepo interfaces.SeasonRepositoryInterface, episodeRepo interfaces.EpisodeRepositoryInterface, movieRepo interfaces.MovieRepositoryInterface, settingRepo interfaces.SettingRepositoryInterface, systemRepo interfaces.SystemRepositoryInterface, profileRepo interfaces.ProfileRepositoryInterface, authRepo interfaces.AuthRepositoryInterface, userRepo interfaces.UserRepositoryInterface, historyRepo interfaces.HistoryRepositoryInterface, eventRepo interfaces.EventRepositoryInterface, codecRepo interfaces.CodecRepositoryInterface) interfaces.MetadataServiceInterface {
-	return &MetadataService{
-		metadataQueue: make(chan models.Item),
+func NewMetadataService(eventService interfaces.EventServiceInterface, seriesRepo interfaces.SeriesRepositoryInterface, seasonRepo interfaces.SeasonRepositoryInterface, episodeRepo interfaces.EpisodeRepositoryInterface, movieRepo interfaces.MovieRepositoryInterface, settingRepo interfaces.SettingRepositoryInterface, systemRepo interfaces.SystemRepositoryInterface, profileRepo interfaces.ProfileRepositoryInterface, authRepo interfaces.AuthRepositoryInterface, userRepo interfaces.UserRepositoryInterface, historyRepo interfaces.HistoryRepositoryInterface, eventRepo interfaces.EventRepositoryInterface, codecRepo interfaces.CodecRepositoryInterface) interfaces.MetadataServiceInterface {
+	service := &MetadataService{
+		metadataQueue: make([]models.Item, 0),
 		metadataSet:   make(map[string]struct{}),
+		eventService:  eventService,
 		seriesRepo:    seriesRepo,
 		seasonRepo:    seasonRepo,
 		episodeRepo:   episodeRepo,
@@ -45,6 +47,8 @@ func NewMetadataService(seriesRepo interfaces.SeriesRepositoryInterface, seasonR
 		eventRepo:     eventRepo,
 		codecRepo:     codecRepo,
 	}
+	service.cond = sync.NewCond(&service.mu)
+	return service
 }
 
 func (s *MetadataService) Enqueue(item models.Item) {
@@ -53,20 +57,21 @@ func (s *MetadataService) Enqueue(item models.Item) {
 	itemID := fmt.Sprintf("%s_%s", item.Type, item.Id)
 	if _, ok := s.metadataSet[itemID]; !ok {
 		s.metadataSet[itemID] = struct{}{}
-		s.metadataQueue <- item
+		s.metadataQueue = append(s.metadataQueue, item)
+		s.cond.Signal()
 	}
 }
 
 func (s *MetadataService) process() {
 	for {
-		select {
-		case item, ok := <-s.metadataQueue:
-			if ok {
-				s.processItem(item)
-			}
-		case <-time.After(1 * time.Second):
-			continue
+		s.mu.Lock()
+		for len(s.metadataQueue) == 0 {
+			s.cond.Wait()
 		}
+		item := s.metadataQueue[0]
+		s.metadataQueue = s.metadataQueue[1:]
+		s.mu.Unlock()
+		s.processItem(item)
 	}
 }
 
@@ -86,7 +91,9 @@ func (s *MetadataService) processItem(item models.Item) {
 		if err != nil {
 			log.Print(err)
 		}
-		series, err = utils.GetSeriesMetadata(series)
+		log.Print("getting series meta")
+		series, episodes, err := utils.GetSeriesMetadata(series)
+		log.Print(episodes)
 		if err != nil {
 			log.Print(err)
 		}

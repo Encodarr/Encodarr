@@ -2,12 +2,12 @@ package routes
 
 import (
 	"transfigurr/api/controllers"
-	"transfigurr/repository"
+	"transfigurr/interfaces"
 
 	"github.com/gin-gonic/gin"
 )
 
-func ProfileRoutes(rg *gin.RouterGroup, profileRepo *repository.ProfileRepository) {
+func ProfileRoutes(rg *gin.RouterGroup, profileRepo interfaces.ProfileRepositoryInterface) {
 	controller := controllers.NewProfileController(profileRepo)
 	rg.GET("/profiles", controller.GetProfiles)
 	rg.GET("/profiles/:profileId", controller.GetProfileById)

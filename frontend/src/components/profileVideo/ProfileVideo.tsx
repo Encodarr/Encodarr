@@ -86,9 +86,9 @@ const ProfileVideo = ({
 					<InputContainer
 						type="select"
 						label="Framerate type"
-						selected={content?.framerate_type}
+						selected={content?.framerateType}
 						onChange={(e: any) =>
-							setContent({ ...content, framerate_type: e.target.value })
+							setContent({ ...content, framerateType: e.target.value })
 						}
 					>
 						<option value="peak">Peak Framerate</option>
@@ -99,9 +99,9 @@ const ProfileVideo = ({
 					<InputContainer
 						type="select"
 						label="Quality Type"
-						selected={content?.quality_type}
+						selected={content?.qualityType}
 						onChange={(e: any) =>
-							setContent({ ...content, quality_type: e.target.value })
+							setContent({ ...content, qualityType: e.target.value })
 						}
 					>
 						<option value="constant quality">Constant Quality</option>
@@ -110,24 +110,24 @@ const ProfileVideo = ({
 					<InputContainer
 						type="text"
 						label="Constant Quality"
-						selected={content?.constant_quality}
-						disabled={content?.quality_type != "constant quality"}
+						selected={content?.constantQuality}
+						disabled={content?.qualityType != "constant quality"}
 						onChange={(e: any) =>
 							setContent({
 								...content,
-								constant_quality: e.target.value,
+								constantQuality: e.target.value,
 							})
 						}
 					/>
 					<InputContainer
 						type="text"
 						label="Average Bitrate"
-						disabled={content?.quality_type != "average bitrate"}
-						selected={content?.average_bitrate}
+						disabled={content?.qualityType != "average bitrate"}
+						selected={content?.averageBitrate}
 						onChange={(e: any) =>
 							setContent({
 								...content,
-								average_bitrate: e.target.value,
+								averageBitrate: e.target.value,
 							})
 						}
 					/>
@@ -206,11 +206,11 @@ const ProfileVideo = ({
 						<InputContainer
 							type="checkbox"
 							label="Fast Decode"
-							checked={content.fast_decode}
+							checked={content.fastDecode}
 							onChange={(e: any) =>
 								setContent({
 									...content,
-									fast_decode: e.target.checked,
+									fastDecode: e.target.checked,
 								})
 							}
 						/>

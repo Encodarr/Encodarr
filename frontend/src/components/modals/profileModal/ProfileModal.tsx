@@ -14,7 +14,12 @@ const ProfileModal = ({
   setContent,
 }: any) => {
   const wsContext = useContext(WebSocketContext);
-  const settings = wsContext?.data?.settings;
+  const settings: any = wsContext?.data?.settings
+  ? Object.keys(wsContext?.data?.settings).reduce((acc, id) => {
+      acc[id] = wsContext?.data?.settings[id].value;
+      return acc;
+    }, {})
+  : {};
   const codecs: any = wsContext?.data?.codecs;
   const containers: any = wsContext?.data?.containers;
   const encoders: any = wsContext?.data?.encoders;
@@ -30,7 +35,7 @@ const ProfileModal = ({
       title={header}
       onClose={onClose}
       onSave={onSave}
-      showDelete={data?.id != settings?.default_profile.value}
+      showDelete={data?.id != settings?.default_profile}
       onDelete={onDelete}
     >
       <ProfileEditor

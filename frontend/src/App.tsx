@@ -141,11 +141,11 @@ function App() {
   }
   function SeriesSelect() {
     const { seriesName } = useParams();
-    return <Series series_name={seriesName} />;
+    return <Series seriesName={seriesName} />;
   }
   function MovieSelect() {
     const { movieName } = useParams();
-    return <Movie movie_name={movieName} />;
+    return <Movie movieName={movieName} />;
   }
 
   function NotFound() {

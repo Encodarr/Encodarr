@@ -16,7 +16,6 @@ const HeaderComponent = () => {
 	const queue = wsContext?.data?.queue;
 	const [openDropdown, setOpenDropdown] = useState(false);
 	const dropdownRef: any = useRef(null);
-
 	useEffect(() => {
 		function handleClickOutside(event: any) {
 			if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -90,7 +89,7 @@ const HeaderComponent = () => {
 						</div>
 
 						<div className={styles.text}>
-							{settings?.queue_status == "active"
+							{settings?.queueStatus == "active"
 								? queue?.stage || "--"
 								: "Paused"}
 						</div>

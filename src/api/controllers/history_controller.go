@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"transfigurr/interfaces"
 	"transfigurr/models"
 	"transfigurr/repository"
 
@@ -11,10 +12,10 @@ import (
 )
 
 type HistoryController struct {
-	Repo *repository.HistoryRepository
+	Repo interfaces.HistoryRepositoryInterface
 }
 
-func NewHistoryController(repo *repository.HistoryRepository) *HistoryController {
+func NewHistoryController(repo interfaces.HistoryRepositoryInterface) *HistoryController {
 	return &HistoryController{
 		Repo: repo,
 	}

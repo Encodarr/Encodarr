@@ -19,31 +19,31 @@ func SeedProfileAudioLanguages(db *gorm.DB) {
 	}
 	defaultProfileAudioLanguages := []models.ProfileAudioLanguage{
 		{
-			ProfileId: "1",
+			ProfileId: 1,
 			Language:  "all",
 		},
 		{
-			ProfileId: "2",
+			ProfileId: 2,
 			Language:  "all",
 		},
 		{
-			ProfileId: "3",
+			ProfileId: 3,
 			Language:  "all",
 		},
 		{
-			ProfileId: "4",
+			ProfileId: 4,
 			Language:  "all",
 		},
 		{
-			ProfileId: "5",
+			ProfileId: 5,
 			Language:  "all",
 		},
 		{
-			ProfileId: "6",
+			ProfileId: 6,
 			Language:  "all",
 		},
 		{
-			ProfileId: "7",
+			ProfileId: 7,
 			Language:  "all",
 		},
 	}

@@ -1,19 +1,20 @@
 package controllers
 
 import (
+	"log"
 	"net/http"
 	"strconv"
+	"transfigurr/interfaces"
 	"transfigurr/models"
-	"transfigurr/repository"
 
 	"github.com/gin-gonic/gin"
 )
 
 type ProfileController struct {
-	Repo *repository.ProfileRepository
+	Repo interfaces.ProfileRepositoryInterface
 }
 
-func NewProfileController(repo *repository.ProfileRepository) *ProfileController {
+func NewProfileController(repo interfaces.ProfileRepositoryInterface) *ProfileController {
 	return &ProfileController{
 		Repo: repo,
 	}
@@ -57,6 +58,7 @@ func (ctrl *ProfileController) UpsertProfile(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&inputProfile); err != nil {
+		log.Print(err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}

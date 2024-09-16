@@ -24,11 +24,11 @@ const ProfileFilters = ({ content, setContent }: any) => {
 					<InputContainer
 						type="select"
 						label="Interlace"
-						selected={content?.interlace_detection}
+						selected={content?.interlaceDetection}
 						onChange={(e: any) => {
 							setContent({
 								...content,
-								interlace_detection: e.target.value,
+								interlaceDetection: e.target.value,
 							});
 						}}
 					>
@@ -59,9 +59,9 @@ const ProfileFilters = ({ content, setContent }: any) => {
 						<InputContainer
 							type="select"
 							label="Preset"
-							selected={content?.deinterlace_preset}
+							selected={content?.deinterlacePreset}
 							onChange={(e: any) => {
-								setContent({ ...content, deinterlace_preset: e.target.value });
+								setContent({ ...content, deinterlacePreset: e.target.value });
 							}}
 						>
 							{content?.deinterlace == "yadif" && (
@@ -113,9 +113,9 @@ const ProfileFilters = ({ content, setContent }: any) => {
 						<InputContainer
 							type="select"
 							label="Tune"
-							selected={content?.deblock_tune}
+							selected={content?.deblockTune}
 							onChange={(e: any) => {
-								setContent({ ...content, deblock_tune: e.target.value });
+								setContent({ ...content, deblockTune: e.target.value });
 							}}
 						>
 							<option value="small">Small (4x4)</option>
@@ -146,9 +146,9 @@ const ProfileFilters = ({ content, setContent }: any) => {
 							<InputContainer
 								type="select"
 								label="Preset"
-								selected={content?.denoise_preset}
+								selected={content?.denoisePreset}
 								onChange={(e: any) => {
-									setContent({ ...content, denoise_preset: e.target.value });
+									setContent({ ...content, denoisePreset: e.target.value });
 								}}
 							>
 								<option value="ultralight">Ultralight</option>
@@ -162,9 +162,9 @@ const ProfileFilters = ({ content, setContent }: any) => {
 								<InputContainer
 									type="select"
 									label="Tune"
-									selected={content?.denoise_tune}
+									selected={content?.denoiseTune}
 									onChange={(e: any) => {
-										setContent({ ...content, denoise_tune: e.target.value });
+										setContent({ ...content, denoiseTune: e.target.value });
 									}}
 								>
 									<option value="film">Film</option>
@@ -184,9 +184,9 @@ const ProfileFilters = ({ content, setContent }: any) => {
 					<InputContainer
 						type="select"
 						label="Smooth"
-						selected={content?.chroma_smooth}
+						selected={content?.chromaSmooth}
 						onChange={(e: any) => {
-							setContent({ ...content, chroma_smooth: e.target.value });
+							setContent({ ...content, chromaSmooth: e.target.value });
 						}}
 					>
 						<option value="off">Off</option>
@@ -199,13 +199,13 @@ const ProfileFilters = ({ content, setContent }: any) => {
 					</InputContainer>
 				</div>
 				<div className={styles.item}>
-					{content?.chroma_smooth != "off" && (
+					{content?.chromaSmooth != "off" && (
 						<InputContainer
 							type="select"
 							label="Tune"
-							selected={content?.chroma_smooth_tune}
+							selected={content?.chromaSmoothTune}
 							onChange={(e: any) => {
-								setContent({ ...content, chroma_smooth_tune: e.target.value });
+								setContent({ ...content, chromaSmoothTune: e.target.value });
 							}}
 						>
 							<option value="off">Off</option>
@@ -238,16 +238,16 @@ const ProfileFilters = ({ content, setContent }: any) => {
 						<InputContainer
 							type="select"
 							label="Preset"
-							selected={content?.sharpen_preset}
+							selected={content?.sharpenPreset}
 							onChange={(e: any) => {
-								setContent({ ...content, sharpen_preset: e.target.value });
+								setContent({ ...content, sharpenPreset: e.target.value });
 							}}
 						>
 							<option value="ultralight">Ultralight</option>
 							<option value="light">Light</option>
 							<option value="medium">Medium</option>
 							<option value="strong">Strong</option>
-							<option value="stronger">Stro`nger</option>
+							<option value="stronger">Stronger</option>
 							<option value="very strong">Very Strong</option>
 						</InputContainer>
 					)}

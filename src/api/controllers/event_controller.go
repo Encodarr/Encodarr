@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"transfigurr/interfaces"
 	"transfigurr/models"
 	"transfigurr/repository"
 
@@ -11,10 +12,10 @@ import (
 )
 
 type EventController struct {
-	Repo *repository.EventRepository
+	Repo interfaces.EventRepositoryInterface
 }
 
-func NewEventController(repo *repository.EventRepository) *EventController {
+func NewEventController(repo interfaces.EventRepositoryInterface) *EventController {
 	return &EventController{
 		Repo: repo,
 	}

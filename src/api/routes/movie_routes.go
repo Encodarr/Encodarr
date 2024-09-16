@@ -2,12 +2,12 @@ package routes
 
 import (
 	"transfigurr/api/controllers"
-	"transfigurr/repository"
+	"transfigurr/interfaces"
 
 	"github.com/gin-gonic/gin"
 )
 
-func MovieRoutes(rg *gin.RouterGroup, movieRepo *repository.MovieRepository) {
+func MovieRoutes(rg *gin.RouterGroup, movieRepo interfaces.MovieRepositoryInterface) {
 	controller := controllers.NewMovieController(movieRepo)
 	rg.GET("/movies", controller.GetMovies)
 	rg.GET("/movie/:movieId", controller.GetMovieByID)

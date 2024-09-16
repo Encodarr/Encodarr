@@ -7,8 +7,8 @@ import (
 	"log"
 	"net/http"
 	"transfigurr/constants"
+	"transfigurr/interfaces"
 	"transfigurr/models"
-	"transfigurr/repository"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
@@ -16,10 +16,10 @@ import (
 )
 
 type AuthController struct {
-	Repo *repository.AuthRepository
+	Repo interfaces.AuthRepositoryInterface
 }
 
-func NewAuthController(repo *repository.AuthRepository) *AuthController {
+func NewAuthController(repo interfaces.AuthRepositoryInterface) *AuthController {
 	return &AuthController{
 		Repo: repo,
 	}

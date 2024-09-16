@@ -4,17 +4,17 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"transfigurr/interfaces"
 	"transfigurr/models"
-	"transfigurr/repository"
 
 	"github.com/gin-gonic/gin"
 )
 
 type EpisodeController struct {
-	Repo *repository.EpisodeRepository
+	Repo interfaces.EpisodeRepositoryInterface
 }
 
-func NewEpisodeController(repo *repository.EpisodeRepository) *EpisodeController {
+func NewEpisodeController(repo interfaces.EpisodeRepositoryInterface) *EpisodeController {
 	return &EpisodeController{
 		Repo: repo,
 	}

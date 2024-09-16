@@ -6,7 +6,12 @@ import GeneralToolbar from "../toolbars/generalToolbar/GeneralToolbar";
 
 const General = () => {
 	const wsContext = useContext(WebSocketContext);
-	const initialSettings = wsContext?.data?.settings;
+	const initialSettings = wsContext?.data?.settings
+  ? Object.keys(wsContext?.data?.settings).reduce((acc, key) => {
+      acc[key] = wsContext?.data?.settings[key].value;
+      return acc;
+    }, {})
+  : {};
 	const profiles = wsContext?.data?.profiles;
 	const [currentSettings, setCurrentSettings] = useState<any>({});
 	const hasSetCurrentSettings = useRef(false);
@@ -49,9 +54,9 @@ const General = () => {
 					<InputContainer
 						type="select"
 						label="Default Profile"
-						selected={currentSettings?.default_profile}
+						selected={currentSettings?.defaultProfile}
 						onChange={(e: any) =>
-							handleChange("default_profile", e.target.value)
+							handleChange("defaultProfile", e.target.value)
 						}
 					>
 						{Object.entries(profiles || {})?.map(([key, profile]: any) => (
@@ -64,8 +69,8 @@ const General = () => {
 					<InputContainer
 						type="select"
 						label="Queue State"
-						selected={currentSettings?.queue_status}
-						onChange={(e: any) => handleChange("queue_status", e.target.value)}
+						selected={currentSettings?.queueStatus}
+						onChange={(e: any) => handleChange("queueStatus", e.target.value)}
 					>
 						<option value="active">Active</option>
 						<option value="inactive">Inactive</option>
@@ -74,9 +79,9 @@ const General = () => {
 					<InputContainer
 						type="select"
 						label="Queue Startup State"
-						selected={currentSettings?.queue_startup_state}
+						selected={currentSettings?.queueStartupState}
 						onChange={(e: any) =>
-							handleChange("queue_startup_state", e.target.value)
+							handleChange("queueStartupState", e.target.value)
 						}
 					>
 						<option value="previous">Previous</option>
@@ -130,8 +135,8 @@ const General = () => {
 						type="select"
 						label="Log Level"
 						warningText="Requires restart to take effect"
-						selected={currentSettings?.log_level}
-						onChange={(e: any) => handleChange("log_level", e.target.value)}
+						selected={currentSettings?.logLevel}
+						onChange={(e: any) => handleChange("logLevel", e.target.value)}
 					>
 						<option value="info">Info</option>
 						<option value="debug">Debug</option>

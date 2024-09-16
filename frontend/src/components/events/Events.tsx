@@ -7,18 +7,24 @@ import EventsTable from "../tables/eventsTable/EventsTable";
 
 const Events = () => {
 	const wsContext: any = useContext(WebSocketContext);
-	const settings = wsContext?.data?.settings;
+	const settings: any = wsContext?.data?.settings
+  ? Object.keys(wsContext?.data?.settings).reduce((acc, key) => {
+      acc[key] = wsContext?.data?.settings[key].value;
+      return acc;
+    }, {})
+  : {};
+
 	const logs = wsContext?.data?.logs || [];
 	let sortedLogs = [...logs].sort((a, b) => b.id - a.id);
-	if (settings?.events_filter == "info") {
+	if (settings?.eventsFilter == "info") {
 		sortedLogs = sortedLogs.filter((log: any) => {
 			return log.level == "INFO";
 		});
-	} else if (settings?.events_filter == "warn") {
+	} else if (settings?.eventsFilter == "warn") {
 		sortedLogs = sortedLogs.filter((log: any) => {
 			return log.level == "WARN";
 		});
-	} else if (settings?.events_filter == "error") {
+	} else if (settings?.eventsFilter == "error") {
 		sortedLogs = sortedLogs.filter((log: any) => {
 			return log.level == "ERROR";
 		});

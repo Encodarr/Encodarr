@@ -2,12 +2,12 @@ package routes
 
 import (
 	"transfigurr/api/controllers"
-	"transfigurr/repository"
+	"transfigurr/interfaces"
 
 	"github.com/gin-gonic/gin"
 )
 
-func SeriesRoutes(rg *gin.RouterGroup, seriesRepo *repository.SeriesRepository) {
+func SeriesRoutes(rg *gin.RouterGroup, seriesRepo interfaces.SeriesRepositoryInterface) {
 	controller := controllers.NewSeriesController(seriesRepo)
 	rg.GET("/series", controller.GetSeries)
 	rg.GET("/series/:seriesId", controller.GetSeriesByID)

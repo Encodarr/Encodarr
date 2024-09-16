@@ -13,12 +13,18 @@ const Media = () => {
   const wsContext = useContext(WebSocketContext);
   const movies = wsContext?.data?.movies;
   const series = wsContext?.data?.series;
-  const settings = wsContext?.data?.settings;
+  const settings: any = wsContext?.data?.settings
+  ? Object.keys(wsContext?.data?.settings).reduce((acc, key) => {
+      acc[key] = wsContext?.data?.settings[key].value;
+      return acc;
+    }, {})
+  : {};
+
   const profiles = wsContext?.data?.profiles;
-  const view = settings?.media_view.value;
-  const sort = settings?.media_sort.value;
-  const filter = settings?.media_filter.value;
-  const sortDirection = settings?.media_sort_direction.value;
+  const view = settings?.mediaView;
+  const sort = settings?.mediaSort;
+  const filter = settings?.mediaFilter;
+  const sortDirection = settings?.mediaSortDirection;
   const sortedMedia = sortAndFilter(
     series,
     movies,
@@ -30,7 +36,7 @@ const Media = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [content, setContent] = useState({});
   const [selected, setSelected] = useState(null);
-  console.log("sorted", wsContext?.data);
+  console.log(sortedMedia);
   return (
     <div className={styles.media}>
       <MediaToolbar
@@ -59,7 +65,7 @@ const Media = () => {
             />
           )}
           {view === "posters" && (
-            <Posters settings={settings} sortedMedia={sortedMedia || []} />
+            <Posters settings={settings} sortedMedia={sortedMedia || []} profiles={profiles} />
           )}
           {view === "overview" && (
             <Overviews

@@ -1,16 +1,16 @@
 package controllers
 
 import (
-	"transfigurr/repository"
+	"transfigurr/interfaces"
 
 	"github.com/gin-gonic/gin"
 )
 
 type CodecController struct {
-	Repo *repository.CodecRepository
+	Repo interfaces.CodecRepositoryInterface
 }
 
-func NewCodecController(repo *repository.CodecRepository) *CodecController {
+func NewCodecController(repo interfaces.CodecRepositoryInterface) *CodecController {
 	return &CodecController{
 		Repo: repo,
 	}

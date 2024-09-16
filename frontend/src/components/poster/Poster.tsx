@@ -1,26 +1,24 @@
 import styles from "./Poster.module.scss";
-import { useContext, useEffect, useState } from "react";
-import { WebSocketContext } from "../../contexts/webSocketContext";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-const PosterComponent = ({ media, posterWidth, posterHeight }: any) => {
-  const wsContext = useContext(WebSocketContext);
-  const profiles = wsContext?.data?.profiles;
-  const settings = wsContext?.data?.settings;
-  const type = media?.episode_count != undefined ? "series" : "movies";
+const PosterComponent = ({ media, posterWidth, posterHeight, profiles, settings }: any) => {
+  console.log(media, 'hi')
+  console.log(settings, 'set')
+  const type = media?.episodeCount != undefined ? "series" : "movies";
   const progress = () => {
-    if (media?.episode_count == undefined) {
-      return media?.missing == true ? "0%" : "100%";
+    if (media?.episodeCount == undefined) {
+      return media?.missing ? "0%" : "100%";
     }
-    return media?.episode_count === 0
+    return media?.episodeCount === 0
       ? "100%"
-      : ((media?.episode_count - media?.missing_episodes) /
-          media?.episode_count || 0) *
+      : ((media?.episodeCount - media?.missingEpisodes) /
+          media?.episodeCount || 0) *
           100 +
           "%";
   };
   const backgroundColor = () => {
     if (progress() === "100%") {
-      if (media?.missing_episodes == undefined) {
+      if (media?.missingEpisodes == undefined) {
         return "rgb(39, 194, 76)";
       }
       return media?.status === "Ended"
@@ -95,38 +93,38 @@ const PosterComponent = ({ media, posterWidth, posterHeight }: any) => {
                     backgroundColor: backgroundColor(),
                     width: progress(),
                     height:
-                      settings.media_poster_detailedProgressBar == "1"
+                      settings.mediaPosterDetailedProgressBar
                         ? "15px"
                         : "5px",
                   }}
                 />
-                {settings?.media_poster_detailedProgressBar == "1" && (
+                {settings?.mediaPosterDetailedProgressBar && (
                   <div className={styles.detailText}>
-                    {media?.episode_count == undefined ? (
+                    {media?.episodeCount == undefined ? (
                       <>{media?.missing ? "0/1" : "1/1"}</>
                     ) : (
                       <>
-                        {media?.episode_count - media?.missing_episodes}/
-                        {media?.episode_count}
+                        {media?.episodeCount - media?.missingEpisodes}/
+                        {media?.episodeCount}
                       </>
                     )}
                   </div>
                 )}
               </div>
-              {settings?.media_poster_showTitle == "1" && (
+              {settings?.mediaPosterShowTitle && (
                 <div className={styles.name}>
                   {media?.name ? media?.name : media?.id}
                 </div>
               )}
-              {settings?.media_poster_showMonitored == "1" && (
+              {settings?.mediaPosterShowMonitored && (
                 <div className={styles.status}>
                   {media?.monitored ? "Monitored" : "Unmonitored"}
                 </div>
               )}
-              {settings?.media_poster_showProfile == "1" && (
+              {settings?.mediaPosterShowProfile && (
                 <div className={styles.profile}>
-                  {profiles && media?.profile_id in profiles
-                    ? profiles[media?.profile_id]?.name
+                  {profiles && media?.profileId in profiles
+                    ? profiles[media?.profileId]?.name
                     : ""}
                 </div>
               )}

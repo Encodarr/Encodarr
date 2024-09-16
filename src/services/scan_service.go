@@ -4,18 +4,19 @@ import (
 	"fmt"
 	"log"
 	"sync"
-	"time"
 	"transfigurr/interfaces"
 	"transfigurr/models"
 	"transfigurr/tasks"
 )
 
 type ScanService struct {
-	scanQueue       chan models.Item
+	scanQueue       []models.Item
 	scanSet         map[string]struct{}
+	mu              sync.Mutex
+	cond            *sync.Cond
 	metadataService interfaces.MetadataServiceInterface
 	encodeService   interfaces.EncodeServiceInterface
-	mu              sync.Mutex
+	eventService    interfaces.EventServiceInterface
 	seriesRepo      interfaces.SeriesRepositoryInterface
 	seasonRepo      interfaces.SeasonRepositoryInterface
 	episodeRepo     interfaces.EpisodeRepositoryInterface
@@ -30,12 +31,13 @@ type ScanService struct {
 	codecRepo       interfaces.CodecRepositoryInterface
 }
 
-func NewScanService(metadataService interfaces.MetadataServiceInterface, encodeService interfaces.EncodeServiceInterface, seriesRepo interfaces.SeriesRepositoryInterface, seasonRepo interfaces.SeasonRepositoryInterface, episodeRepo interfaces.EpisodeRepositoryInterface, movieRepo interfaces.MovieRepositoryInterface, settingRepo interfaces.SettingRepositoryInterface, systemRepo interfaces.SystemRepositoryInterface, profileRepo interfaces.ProfileRepositoryInterface, authRepo interfaces.AuthRepositoryInterface, userRepo interfaces.UserRepositoryInterface, historyRepo interfaces.HistoryRepositoryInterface, eventRepo interfaces.EventRepositoryInterface, codecRepo interfaces.CodecRepositoryInterface) interfaces.ScanServiceInterface {
-	return &ScanService{
-		scanQueue:       make(chan models.Item, 100),
+func NewScanService(eventService interfaces.EventServiceInterface, metadataService interfaces.MetadataServiceInterface, encodeService interfaces.EncodeServiceInterface, seriesRepo interfaces.SeriesRepositoryInterface, seasonRepo interfaces.SeasonRepositoryInterface, episodeRepo interfaces.EpisodeRepositoryInterface, movieRepo interfaces.MovieRepositoryInterface, settingRepo interfaces.SettingRepositoryInterface, systemRepo interfaces.SystemRepositoryInterface, profileRepo interfaces.ProfileRepositoryInterface, authRepo interfaces.AuthRepositoryInterface, userRepo interfaces.UserRepositoryInterface, historyRepo interfaces.HistoryRepositoryInterface, eventRepo interfaces.EventRepositoryInterface, codecRepo interfaces.CodecRepositoryInterface) interfaces.ScanServiceInterface {
+	service := &ScanService{
+		scanQueue:       make([]models.Item, 0),
 		scanSet:         make(map[string]struct{}),
 		metadataService: metadataService,
 		encodeService:   encodeService,
+		eventService:    eventService,
 		seriesRepo:      seriesRepo,
 		seasonRepo:      seasonRepo,
 		episodeRepo:     episodeRepo,
@@ -49,6 +51,8 @@ func NewScanService(metadataService interfaces.MetadataServiceInterface, encodeS
 		eventRepo:       eventRepo,
 		codecRepo:       codecRepo,
 	}
+	service.cond = sync.NewCond(&service.mu)
+	return service
 }
 
 func (s *ScanService) Enqueue(item models.Item) {
@@ -57,20 +61,22 @@ func (s *ScanService) Enqueue(item models.Item) {
 	itemID := fmt.Sprintf("%s_%s", item.Type, item.Id)
 	if _, ok := s.scanSet[itemID]; !ok {
 		s.scanSet[itemID] = struct{}{}
-		s.scanQueue <- item
+		s.scanQueue = append(s.scanQueue, item)
+		s.cond.Signal()
 	}
 }
 
 func (s *ScanService) process() {
 	for {
-		select {
-		case item, ok := <-s.scanQueue:
-			if ok {
-				s.processItem(item)
-			}
-		case <-time.After(1 * time.Second):
-			continue
+		s.mu.Lock()
+		for len(s.scanQueue) == 0 {
+			s.cond.Wait()
 		}
+		item := s.scanQueue[0]
+		s.scanQueue = s.scanQueue[1:]
+		s.mu.Unlock()
+		s.processItem(item)
+		tasks.ScanSystem(s.seriesRepo, s.systemRepo)
 	}
 }
 
@@ -83,12 +89,15 @@ func (s *ScanService) processItem(item models.Item) {
 		}
 
 		if movie.Name == "" {
+			s.eventService.Log("INFO", "scan", "Scanning series: "+item.Id)
 			s.metadataService.Enqueue(models.Item{Type: "movie", Id: movie.Id})
 		}
 		if movie.Missing && movie.Monitored {
 			s.encodeService.Enqueue(models.Item{Type: "movie", Id: movie.Id})
 		}
 	} else if item.Type == "series" {
+		s.eventService.Log("INFO", "scan", "Scanning series: "+item.Id)
+		log.Print("Scanning series: " + item.Id)
 		tasks.ScanSeries(s.encodeService, item.Id, s.seriesRepo, s.seasonRepo, s.episodeRepo, s.settingRepo, s.profileRepo)
 		series, err := s.seriesRepo.GetSeriesByID(item.Id)
 		if err != nil {
@@ -97,6 +106,15 @@ func (s *ScanService) processItem(item models.Item) {
 
 		if series.Name == "" {
 			s.metadataService.Enqueue(models.Item{Type: "series", Id: series.Id})
+		} else {
+			for _, season := range series.Seasons {
+				for _, episode := range season.Episodes {
+					if episode.EpisodeName == "" {
+						s.metadataService.Enqueue(models.Item{Type: "series", Id: series.Id})
+						break
+					}
+				}
+			}
 		}
 	}
 

@@ -10,6 +10,8 @@ import (
 	"transfigurr/interfaces"
 	"transfigurr/models"
 	"transfigurr/utils"
+
+	"github.com/shirou/gopsutil/disk"
 )
 
 var (
@@ -213,4 +215,101 @@ func ScanSeries(encodeService interfaces.EncodeServiceInterface, seriesID string
 		series.SpaceSaved += data.SpaceSaved
 	}
 	seriesRepo.UpsertSeries(series.Id, series)
+}
+
+func getDiskSpace(path string) (uint64, uint64, error) {
+	log.Printf("Checking disk space for path: %s", path)
+	usage, err := disk.Usage(path)
+	if err != nil {
+		log.Printf("Error getting disk usage for path %s: %v", path, err)
+		return 0, 0, err
+	}
+	log.Printf("Disk usage for path %s: Free: %d, Total: %d", path, usage.Free, usage.Total)
+	return usage.Free, usage.Total, nil
+}
+
+func ScanSystem(seriesRepo interfaces.SeriesRepositoryInterface, systemRepo interfaces.SystemRepositoryInterface) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("An error occurred scanning system: %v", r)
+		}
+	}()
+
+	log.Println("Scanning System")
+
+	series, err := seriesRepo.GetSeries()
+	if err != nil {
+		log.Printf("Error fetching series: %v", err)
+		return
+	}
+
+	seriesCount := 0
+	episodeCount := 0
+	fileCount := 0
+	sizeOnDisk := 0
+	monitoredCount := 0
+	unmonitoredCount := 0
+	endedCount := 0
+	continuingCount := 0
+	spaceSaved := 0
+
+	seriesFreeSpace, seriesTotalSpace, err := getDiskSpace(constants.SeriesPath)
+	if err != nil {
+		log.Printf("Error fetching series disk space: %v", err)
+		return
+	}
+
+	moviesFreeSpace, moviesTotalSpace, err := getDiskSpace(constants.MoviesPath)
+	if err != nil {
+		log.Printf("Error fetching Movies disk space: %v", err)
+		return
+	}
+	configFreeSpace, configTotalSpace, err := getDiskSpace(constants.ConfigPath)
+	if err != nil {
+		log.Printf("Error fetching Config disk space: %v", err)
+		return
+	}
+	transcodeFreeSpace, transcodeTotalSpace, err := getDiskSpace(constants.TranscodeFolder)
+
+	if err != nil {
+		log.Printf("Error fetching Transcode disk space: %v", err)
+		return
+	}
+
+	for id := range series {
+		s := series[id]
+		seriesCount++
+		sizeOnDisk += s.Size
+		spaceSaved += s.SpaceSaved
+		episodeCount += s.EpisodeCount
+		fileCount += s.EpisodeCount
+		if s.Monitored {
+			monitoredCount++
+		} else {
+			unmonitoredCount++
+		}
+		if s.Status == "Ended" {
+			endedCount++
+		} else {
+			continuingCount++
+		}
+	}
+
+	systemRepo.UpsertSystem("series_count", models.System{Id: "series_count", Value: strconv.Itoa(seriesCount)})
+	systemRepo.UpsertSystem("episode_count", models.System{Id: "episode_count", Value: strconv.Itoa(episodeCount)})
+	systemRepo.UpsertSystem("files_count", models.System{Id: "files_count", Value: strconv.Itoa(fileCount)})
+	systemRepo.UpsertSystem("size_on_disk", models.System{Id: "size_on_disk", Value: strconv.Itoa(sizeOnDisk)})
+	systemRepo.UpsertSystem("space_saved", models.System{Id: "space_saved", Value: strconv.Itoa(spaceSaved)})
+	systemRepo.UpsertSystem("monitored_count", models.System{Id: "monitored_count", Value: strconv.Itoa(monitoredCount)})
+	systemRepo.UpsertSystem("unmonitored_count", models.System{Id: "unmonitored_count", Value: strconv.Itoa(unmonitoredCount)})
+	systemRepo.UpsertSystem("ended_count", models.System{Id: "ended_count", Value: strconv.Itoa(endedCount)})
+	systemRepo.UpsertSystem("continuing_count", models.System{Id: "continuing_count", Value: strconv.Itoa(continuingCount)})
+	systemRepo.UpsertSystem("series_total_space", models.System{Id: "series_total_space", Value: strconv.Itoa(int(seriesTotalSpace))})
+	systemRepo.UpsertSystem("series_free_space", models.System{Id: "series_free_space", Value: strconv.Itoa(int(seriesFreeSpace))})
+	systemRepo.UpsertSystem("movies_total_space", models.System{Id: "movies_total_space", Value: strconv.Itoa(int(moviesTotalSpace))})
+	systemRepo.UpsertSystem("movies_free_space", models.System{Id: "movies_free_space", Value: strconv.Itoa(int(moviesFreeSpace))})
+	systemRepo.UpsertSystem("config_total_space", models.System{Id: "config_total_space", Value: strconv.Itoa(int(configTotalSpace))})
+	systemRepo.UpsertSystem("config_free_space", models.System{Id: "config_free_space", Value: strconv.Itoa(int(configFreeSpace))})
+	systemRepo.UpsertSystem("transcode_total_space", models.System{Id: "transcode_total_space", Value: strconv.Itoa(int(transcodeTotalSpace))})
+	systemRepo.UpsertSystem("transcode_free_space", models.System{Id: "transcode_free_space", Value: strconv.Itoa(int(transcodeFreeSpace))})
 }

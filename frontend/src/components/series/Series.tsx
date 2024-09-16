@@ -14,14 +14,19 @@ import SeriesToolbar from "../toolbars/seriesToolbar/SeriesToolbar";
 import { formatSize } from "../../utils/format";
 import FolderIcon from "../svgs/folder.svg?react";
 
-const Series = ({ series_name }: any) => {
+const Series = ({ seriesName }: any) => {
   const wsContext = useContext(WebSocketContext);
   const profiles = wsContext?.data?.profiles;
-  const series: any =
-    wsContext?.data?.series && profiles
-      ? wsContext?.data?.series[series_name]
-      : {};
-  const system = wsContext?.data?.system;
+  const series: any = 
+  wsContext?.data?.series && profiles
+    ? wsContext?.data?.series.find((s: any) => s.id === seriesName)
+    : {};
+  const system: any = wsContext?.data?.system
+    ? Object.keys(wsContext?.data?.system).reduce((acc, key) => {
+      acc[key] = wsContext?.data?.system[key].value;
+      return acc;
+    }, {})
+    : {};
   const [content, setContent] = useState<any>({});
   const handleEditClick = () => {
     setIsModalOpen(true);
@@ -32,8 +37,8 @@ const Series = ({ series_name }: any) => {
   const status = series?.status;
   const network = series?.networks;
   const genre = series?.genre;
-  const firstAirDate = series?.release_date?.split("-")[0].trim();
-  const lastAirDate = series?.last_air_date?.split("-")[0].trim();
+  const firstAirDate = series?.releaseDate?.split("-")[0].trim();
+  const lastAirDate = series?.lastAirDate?.split("-")[0].trim();
   const overview = series?.overview;
   const runYears =
     status === "Ended" ? firstAirDate + "-" + lastAirDate : firstAirDate + "-";
@@ -97,7 +102,7 @@ const Series = ({ series_name }: any) => {
         selected={selected}
         setSelected={setSelected}
         handleEditClick={handleEditClick}
-        series_name={series_name}
+        seriesName={seriesName}
       />
       <SeriesModal
         isOpen={isModalOpen}
@@ -161,8 +166,8 @@ const Series = ({ series_name }: any) => {
                   <div className={styles.icon}>
                     <Profile className={styles.svg} />
                   </div>
-                  {profiles && series?.profile_id in profiles
-                    ? profiles[series?.profile_id]?.name
+                  {profiles && series?.profileId in profiles
+                    ? profiles[series?.profileId]?.name
                     : ""}
                 </div>
                 <div className={styles.tag}>

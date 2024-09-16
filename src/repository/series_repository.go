@@ -18,7 +18,7 @@ func NewSeriesRepository(db *gorm.DB) *SeriesRepository {
 
 func (repo *SeriesRepository) GetSeries() ([]models.Series, error) {
 	var seriesList []models.Series
-	if err := repo.DB.Preload("Seasons").Find(&seriesList).Error; err != nil {
+	if err := repo.DB.Preload("Seasons.Episodes").Find(&seriesList).Error; err != nil {
 		return nil, err
 	}
 	return seriesList, nil

@@ -5,18 +5,18 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"transfigurr/interfaces"
 	"transfigurr/models"
-	"transfigurr/repository"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 )
 
 type SettingController struct {
-	Repo *repository.SettingRepository
+	Repo interfaces.SettingRepositoryInterface
 }
 
-func NewSettingController(repo *repository.SettingRepository) *SettingController {
+func NewSettingController(repo interfaces.SettingRepositoryInterface) *SettingController {
 	return &SettingController{
 		Repo: repo,
 	}
@@ -42,30 +42,25 @@ func (ctrl *SettingController) UpsertSetting(c *gin.Context) {
 		return
 	}
 
-	setting, err := ctrl.Repo.GetSettingById(settingId)
+	_, err := ctrl.Repo.GetSettingById(settingId)
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		// Create a new setting if no setting exists with the provided ID
-		err = ctrl.Repo.CreateSetting(inputSetting)
-		if err != nil {
-			log.Print(err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error creating setting"})
-			return
-		}
-		c.IndentedJSON(http.StatusCreated, inputSetting)
+		// Throw an error if no setting exists with the provided ID
+		c.JSON(http.StatusNotFound, gin.H{"error": "Setting not found"})
+		return
 	} else if err != nil {
 		log.Print(err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error retrieving setting"})
 		return
 	} else {
-		ctrl.Repo.UpdateSetting(inputSetting)
-		err = ctrl.Repo.UpdateSetting(setting)
+		// Update the existing setting
+		err = ctrl.Repo.UpdateSetting(inputSetting)
 		if err != nil {
 			log.Print(err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error updating setting"})
 			return
 		}
-		c.IndentedJSON(http.StatusOK, setting)
+		c.IndentedJSON(http.StatusOK, inputSetting)
 	}
 }
 

@@ -16,7 +16,7 @@ const Profile = ({ name, type = "", codecs, onClick, profile }: any) => {
 					<div className={styles.header}>{name}</div>
 					<div className={styles.codecs}>
 						{codecs.map((codec: any) => (
-							<Codec key={codec} codec={codec} />
+							<Codec key={"codec" + codec.codecId} codec={codec.codecId} />
 						))}
 					</div>
 				</div>

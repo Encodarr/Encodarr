@@ -7,13 +7,12 @@ import (
 	"time"
 
 	"transfigurr/interfaces"
-	"transfigurr/repository"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
 
-func WebsocketRoutes(rg *gin.RouterGroup, encodeService interfaces.EncodeServiceInterface, seriesRepo *repository.SeriesRepository, movieRepo *repository.MovieRepository, profileRepo *repository.ProfileRepository, settingRepo *repository.SettingRepository, systemRepo *repository.SystemRepository, historyRepo *repository.HistoryRepository, eventRepo *repository.EventRepository, codecRepo *repository.CodecRepository) {
+func WebsocketRoutes(rg *gin.RouterGroup, encodeService interfaces.EncodeServiceInterface, seriesRepo interfaces.SeriesRepositoryInterface, movieRepo interfaces.MovieRepositoryInterface, profileRepo interfaces.ProfileRepositoryInterface, settingRepo interfaces.SettingRepositoryInterface, systemRepo interfaces.SystemRepositoryInterface, historyRepo interfaces.HistoryRepositoryInterface, eventRepo interfaces.EventRepositoryInterface, codecRepo interfaces.CodecRepositoryInterface) {
 	rg.GET("/ws", func(c *gin.Context) {
 		WebsocketHandler(c.Writer, c.Request, encodeService, seriesRepo, movieRepo, profileRepo, settingRepo, systemRepo, historyRepo, eventRepo, codecRepo)
 	})
@@ -25,14 +24,24 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-func WebsocketHandler(w http.ResponseWriter, r *http.Request, encodeService interfaces.EncodeServiceInterface, seriesRepo *repository.SeriesRepository, movieRepo *repository.MovieRepository, profileRepo *repository.ProfileRepository, settingRepo *repository.SettingRepository, systemRepo *repository.SystemRepository, historyRepo *repository.HistoryRepository, eventRepo *repository.EventRepository, codecRepo *repository.CodecRepository) {
+func WebsocketHandler(w http.ResponseWriter, r *http.Request, encodeService interfaces.EncodeServiceInterface, seriesRepo interfaces.SeriesRepositoryInterface, movieRepo interfaces.MovieRepositoryInterface, profileRepo interfaces.ProfileRepositoryInterface, settingRepo interfaces.SettingRepositoryInterface, systemRepo interfaces.SystemRepositoryInterface, historyRepo interfaces.HistoryRepositoryInterface, eventRepo interfaces.EventRepositoryInterface, codecRepo interfaces.CodecRepositoryInterface) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		http.Error(w, "Could not open websocket connection", http.StatusBadRequest)
 		return
 	}
 	defer conn.Close()
-	sendData(seriesRepo, movieRepo, profileRepo, settingRepo, systemRepo, historyRepo, eventRepo, codecRepo, encodeService, conn)
+
+	// Set up ping/pong handlers
+	conn.SetPingHandler(func(appData string) error {
+		log.Println("Received ping")
+		return conn.WriteControl(websocket.PongMessage, []byte(appData), time.Now().Add(time.Second))
+	})
+
+	conn.SetPongHandler(func(appData string) error {
+		log.Println("Received pong")
+		return nil
+	})
 
 	// Create a ticker that triggers every second
 	ticker := time.NewTicker(1 * time.Second)
@@ -47,10 +56,17 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request, encodeService inte
 		}
 	}()
 
-	select {}
+	// Read messages to keep the connection alive
+	for {
+		_, _, err := conn.ReadMessage()
+		if err != nil {
+			log.Printf("Error reading message: %v", err)
+			break
+		}
+	}
 }
 
-func sendData(seriesRepo *repository.SeriesRepository, movieRepo *repository.MovieRepository, profileRepo *repository.ProfileRepository, settingRepo *repository.SettingRepository, systemRepo *repository.SystemRepository, historyRepo *repository.HistoryRepository, eventRepo *repository.EventRepository, codecRepo *repository.CodecRepository, encodeService interfaces.EncodeServiceInterface, conn *websocket.Conn) {
+func sendData(seriesRepo interfaces.SeriesRepositoryInterface, movieRepo interfaces.MovieRepositoryInterface, profileRepo interfaces.ProfileRepositoryInterface, settingRepo interfaces.SettingRepositoryInterface, systemRepo interfaces.SystemRepositoryInterface, historyRepo interfaces.HistoryRepositoryInterface, eventRepo interfaces.EventRepositoryInterface, codecRepo interfaces.CodecRepositoryInterface, encodeService interfaces.EncodeServiceInterface, conn *websocket.Conn) {
 	series, err := seriesRepo.GetSeries()
 	if err != nil {
 		log.Println("Error fetching series:", err)
@@ -120,5 +136,4 @@ func sendData(seriesRepo *repository.SeriesRepository, movieRepo *repository.Mov
 		log.Println("Error writing message:", err)
 		return
 	}
-
 }

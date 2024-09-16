@@ -2,12 +2,12 @@ package routes
 
 import (
 	"transfigurr/api/controllers"
-	"transfigurr/repository"
+	"transfigurr/interfaces"
 
 	"github.com/gin-gonic/gin"
 )
 
-func HistoryRoutes(rg *gin.RouterGroup, historyRepo *repository.HistoryRepository) {
+func HistoryRoutes(rg *gin.RouterGroup, historyRepo interfaces.HistoryRepositoryInterface) {
 	controller := controllers.NewHistoryController(historyRepo)
 	rg.GET("/historys", controller.GetHistories)
 	rg.GET("/historys/:historyId", controller.GetHistoryById)

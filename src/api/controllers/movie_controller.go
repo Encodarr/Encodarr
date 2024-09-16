@@ -4,18 +4,18 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"transfigurr/interfaces"
 	"transfigurr/models"
-	"transfigurr/repository"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 )
 
 type MovieController struct {
-	Repo *repository.MovieRepository
+	Repo interfaces.MovieRepositoryInterface
 }
 
-func NewMovieController(repo *repository.MovieRepository) *MovieController {
+func NewMovieController(repo interfaces.MovieRepositoryInterface) *MovieController {
 	return &MovieController{
 		Repo: repo,
 	}

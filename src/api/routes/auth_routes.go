@@ -2,12 +2,12 @@ package routes
 
 import (
 	"transfigurr/api/controllers"
-	"transfigurr/repository"
+	"transfigurr/interfaces"
 
 	"github.com/gin-gonic/gin"
 )
 
-func AuthRoutes(rg *gin.RouterGroup, authRepo *repository.AuthRepository) {
+func AuthRoutes(rg *gin.RouterGroup, authRepo interfaces.AuthRepositoryInterface) {
 	controller := controllers.NewAuthController(authRepo)
 	rg.GET("/activated", controller.GetActivated)
 	rg.POST("/register", controller.Register)

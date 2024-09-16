@@ -92,9 +92,9 @@ const MassEditorTable = ({
 								{media?.id}
 							</a>
 						</td>
-						<td>{profiles ? profiles[media.profile_id]?.name : ""}</td>
+						<td>{profiles ? profiles.find((profile: any) => profile.id === media.profileId)?.name : ""}</td>
 						<td>
-							/{media?.missing_episodes == undefined ? "movies" : "series"}/
+							/{media?.missing_episodes ? "movies" : "series"}/
 							{media.id}
 						</td>
 						<td>{formatSize(media.space_saved)}</td>

@@ -3,47 +3,51 @@ package services
 import (
 	"fmt"
 	"sync"
-	"time"
 	"transfigurr/interfaces"
 	"transfigurr/models"
 	"transfigurr/utils"
 )
 
 type EncodeService struct {
-	encodeQueue chan models.Item
-	encodeSet   map[string]struct{}
-	mu          sync.Mutex
-	seriesRepo  interfaces.SeriesRepositoryInterface
-	seasonRepo  interfaces.SeasonRepositoryInterface
-	episodeRepo interfaces.EpisodeRepositoryInterface
-	movieRepo   interfaces.MovieRepositoryInterface
-	settingRepo interfaces.SettingRepositoryInterface
-	systemRepo  interfaces.SystemRepositoryInterface
-	profileRepo interfaces.ProfileRepositoryInterface
-	authRepo    interfaces.AuthRepositoryInterface
-	userRepo    interfaces.UserRepositoryInterface
-	historyRepo interfaces.HistoryRepositoryInterface
-	eventRepo   interfaces.EventRepositoryInterface
-	codecRepo   interfaces.CodecRepositoryInterface
+	encodeQueue  []models.Item
+	encodeSet    map[string]struct{}
+	mu           sync.Mutex
+	cond         *sync.Cond
+	eventService interfaces.EventServiceInterface
+	seriesRepo   interfaces.SeriesRepositoryInterface
+	seasonRepo   interfaces.SeasonRepositoryInterface
+	episodeRepo  interfaces.EpisodeRepositoryInterface
+	movieRepo    interfaces.MovieRepositoryInterface
+	settingRepo  interfaces.SettingRepositoryInterface
+	systemRepo   interfaces.SystemRepositoryInterface
+	profileRepo  interfaces.ProfileRepositoryInterface
+	authRepo     interfaces.AuthRepositoryInterface
+	userRepo     interfaces.UserRepositoryInterface
+	historyRepo  interfaces.HistoryRepositoryInterface
+	eventRepo    interfaces.EventRepositoryInterface
+	codecRepo    interfaces.CodecRepositoryInterface
 }
 
-func NewEncodeService(seriesRepo interfaces.SeriesRepositoryInterface, seasonRepo interfaces.SeasonRepositoryInterface, episodeRepo interfaces.EpisodeRepositoryInterface, movieRepo interfaces.MovieRepositoryInterface, settingRepo interfaces.SettingRepositoryInterface, systemRepo interfaces.SystemRepositoryInterface, profileRepo interfaces.ProfileRepositoryInterface, authRepo interfaces.AuthRepositoryInterface, userRepo interfaces.UserRepositoryInterface, historyRepo interfaces.HistoryRepositoryInterface, eventRepo interfaces.EventRepositoryInterface, codecRepo interfaces.CodecRepositoryInterface) interfaces.EncodeServiceInterface {
-	return &EncodeService{
-		encodeQueue: make(chan models.Item, 100),
-		encodeSet:   make(map[string]struct{}),
-		seriesRepo:  seriesRepo,
-		seasonRepo:  seasonRepo,
-		episodeRepo: episodeRepo,
-		movieRepo:   movieRepo,
-		settingRepo: settingRepo,
-		systemRepo:  systemRepo,
-		profileRepo: profileRepo,
-		authRepo:    authRepo,
-		userRepo:    userRepo,
-		historyRepo: historyRepo,
-		eventRepo:   eventRepo,
-		codecRepo:   codecRepo,
+func NewEncodeService(eventService interfaces.EventServiceInterface, seriesRepo interfaces.SeriesRepositoryInterface, seasonRepo interfaces.SeasonRepositoryInterface, episodeRepo interfaces.EpisodeRepositoryInterface, movieRepo interfaces.MovieRepositoryInterface, settingRepo interfaces.SettingRepositoryInterface, systemRepo interfaces.SystemRepositoryInterface, profileRepo interfaces.ProfileRepositoryInterface, authRepo interfaces.AuthRepositoryInterface, userRepo interfaces.UserRepositoryInterface, historyRepo interfaces.HistoryRepositoryInterface, eventRepo interfaces.EventRepositoryInterface, codecRepo interfaces.CodecRepositoryInterface) interfaces.EncodeServiceInterface {
+	service := &EncodeService{
+		encodeQueue:  make([]models.Item, 0),
+		encodeSet:    make(map[string]struct{}),
+		eventService: eventService,
+		seriesRepo:   seriesRepo,
+		seasonRepo:   seasonRepo,
+		episodeRepo:  episodeRepo,
+		movieRepo:    movieRepo,
+		settingRepo:  settingRepo,
+		systemRepo:   systemRepo,
+		profileRepo:  profileRepo,
+		authRepo:     authRepo,
+		userRepo:     userRepo,
+		historyRepo:  historyRepo,
+		eventRepo:    eventRepo,
+		codecRepo:    codecRepo,
 	}
+	service.cond = sync.NewCond(&service.mu)
+	return service
 }
 
 func (s *EncodeService) Enqueue(item models.Item) {
@@ -52,20 +56,21 @@ func (s *EncodeService) Enqueue(item models.Item) {
 	itemID := fmt.Sprintf("%s_%s", item.Type, item.Id)
 	if _, ok := s.encodeSet[itemID]; !ok {
 		s.encodeSet[itemID] = struct{}{}
-		s.encodeQueue <- item
+		s.encodeQueue = append(s.encodeQueue, item)
+		s.cond.Signal()
 	}
 }
 
 func (s *EncodeService) process() {
 	for {
-		select {
-		case item, ok := <-s.encodeQueue:
-			if ok {
-				s.processItem(item)
-			}
-		case <-time.After(1 * time.Second):
-			continue
+		s.mu.Lock()
+		for len(s.encodeQueue) == 0 {
+			s.cond.Wait()
 		}
+		item := s.encodeQueue[0]
+		s.encodeQueue = s.encodeQueue[1:]
+		s.mu.Unlock()
+		s.processItem(item)
 	}
 }
 
@@ -86,12 +91,8 @@ func (s *EncodeService) GetQueue() []models.Item {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	queue := make([]models.Item, 0, len(s.encodeQueue))
-	for len(s.encodeQueue) > 0 {
-		item := <-s.encodeQueue
-		queue = append(queue, item)
-		s.encodeQueue <- item
-	}
+	queue := make([]models.Item, len(s.encodeQueue))
+	copy(queue, s.encodeQueue)
 	return queue
 }
 

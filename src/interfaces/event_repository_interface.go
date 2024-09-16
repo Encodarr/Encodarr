@@ -7,4 +7,5 @@ type EventRepositoryInterface interface {
 	GetEventById(id string) (models.Event, error)
 	UpsertEventById(event models.Event) error
 	DeleteEventById(event models.Event) error
+	Log(level, service, message string) error
 }

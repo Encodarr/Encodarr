@@ -34,7 +34,7 @@ const QueueToolbar = ({
       key={4}
       settings={settings}
       icon={
-        settings?.queue_status.value === "inactive" ? (
+        settings?.queueStatus === "inactive" ? (
           <Pause className={styles.svg} />
         ) : (
           <Start className={styles.svg} />

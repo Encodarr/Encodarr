@@ -1,8 +1,8 @@
 import styles from "./Posters.module.scss";
 import PosterComponent from "../poster/Poster";
 
-const Posters = ({ sortedMedia, settings }: any) => {
-  const size = settings?.media_poster_posterSize;
+const Posters = ({ sortedMedia, settings, profiles }: any) => {
+  const size = settings?.mediaPosterPosterSize;
   let posterWidth = "128px";
   let posterHeight = "260px";
   if (size === "small") {
@@ -25,6 +25,8 @@ const Posters = ({ sortedMedia, settings }: any) => {
             key={media.id}
             posterWidth={posterWidth}
             posterHeight={posterHeight}
+            profiles={profiles}
+            settings={settings}
           />
         ))}
       </div>

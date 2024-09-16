@@ -5,12 +5,11 @@ import (
 	"transfigurr/api/routes"
 	"transfigurr/constants"
 	"transfigurr/interfaces"
-	"transfigurr/repository"
 
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRouter(scanService interfaces.ScanServiceInterface, encodeService interfaces.EncodeServiceInterface, seriesRepo *repository.SeriesRepository, seasonRepo *repository.SeasonRepository, episodeRepo *repository.EpisodeRepository, movieRepo *repository.MovieRepository, settingRepo *repository.SettingRepository, systemRepo *repository.SystemRepository, profileRepo *repository.ProfileRepository, authRepo *repository.AuthRepository, userRepo *repository.UserRepository, historyRepo *repository.HistoryRepository, eventRepo *repository.EventRepository, codecRepo *repository.CodecRepository) *gin.Engine {
+func SetupRouter(scanService interfaces.ScanServiceInterface, encodeService interfaces.EncodeServiceInterface, seriesRepo interfaces.SeriesRepositoryInterface, seasonRepo interfaces.SeasonRepositoryInterface, episodeRepo interfaces.EpisodeRepositoryInterface, movieRepo interfaces.MovieRepositoryInterface, settingRepo interfaces.SettingRepositoryInterface, systemRepo interfaces.SystemRepositoryInterface, profileRepo interfaces.ProfileRepositoryInterface, authRepo interfaces.AuthRepositoryInterface, userRepo interfaces.UserRepositoryInterface, historyRepo interfaces.HistoryRepositoryInterface, eventRepo interfaces.EventRepositoryInterface, codecRepo interfaces.CodecRepositoryInterface) *gin.Engine {
 	//gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 	api := router.Group("/api")

@@ -1,54 +1,57 @@
 package repository
 
 import (
-	"errors"
+	"log"
+	"time"
 	"transfigurr/models"
 
 	"github.com/jinzhu/gorm"
 )
 
 type EventRepository struct {
-	DB *gorm.DB
+	db *gorm.DB
 }
 
-func NewEventRepository(db *gorm.DB) *EventRepository {
-	return &EventRepository{
-		DB: db,
-	}
+func (repo *EventRepository) DeleteEventById(event models.Event) error {
+	panic("unimplemented")
+}
+
+func (repo *EventRepository) GetEventById(id string) (models.Event, error) {
+	panic("unimplemented")
 }
 
 func (repo *EventRepository) GetEvents() ([]models.Event, error) {
 	var events []models.Event
-	if err := repo.DB.Find(&events).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrRecordNotFound
-		}
-		return nil, err
+	result := repo.db.Find(&events)
+	if result.Error != nil {
+		return nil, result.Error
 	}
 	return events, nil
 }
 
-func (repo *EventRepository) GetEventById(id string) (models.Event, error) {
-	var event models.Event
-	if err := repo.DB.Where("id = ?", id).First(&event).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return models.Event{}, ErrRecordNotFound
-		}
-		return event, err
-	}
-	return event, nil
-}
-
 func (repo *EventRepository) UpsertEventById(event models.Event) error {
-	if err := repo.DB.Save(event).Error; err != nil {
-		return err
-	}
-	return nil
+	panic("unimplemented")
 }
 
-func (repo *EventRepository) DeleteEventById(event models.Event) error {
-	if err := repo.DB.Delete(event).Error; err != nil {
+func NewEventRepository(db *gorm.DB) *EventRepository {
+	return &EventRepository{db: db}
+}
+
+func (repo *EventRepository) Log(level, service, message string) error {
+	log.Print("Attempting to log entry")
+	log.Printf("Level: %s, Service: %s, Message: %s", level, service, message)
+	eventEntry := models.Event{
+		Timestamp: time.Now().Format("2006-01-02T15:04:05.000"),
+		Level:     level,
+		Service:   service,
+		Message:   message,
+	}
+
+	if err := repo.db.Create(&eventEntry).Error; err != nil {
+		log.Printf("Error creating event entry: %v", err)
 		return err
 	}
+
+	log.Print("Event entry successfully created")
 	return nil
 }

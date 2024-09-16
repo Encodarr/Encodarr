@@ -4,12 +4,17 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"image"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"transfigurr/constants"
 	"transfigurr/models"
+
+	"github.com/chai2010/webp"
 )
 
 func GetMovieMetadata(movie models.Movie) (models.Movie, error) {
@@ -112,7 +117,7 @@ func GetMovieMetadata(movie models.Movie) (models.Movie, error) {
 	return movie, nil
 }
 
-func GetSeriesMetadata(series models.Series) (models.Series, error) {
+func parseSeries(series models.Series) (models.Series, error) {
 	client := &http.Client{}
 
 	// Create the search parameters
@@ -210,4 +215,167 @@ func GetSeriesMetadata(series models.Series) (models.Series, error) {
 	series.LastAirDate = seriesData.LastAirDate
 	series.Networks = seriesData.Networks[0].Name
 	return series, nil
+}
+
+func parseEpisode(series models.Series, season models.Season, seasonNumber int, episodeNumber int) (models.Episode, error) {
+	seriesID := series.Id
+	episodeURL := fmt.Sprintf("https://api.themoviedb.org/3/tv/%v/season/%d/episode/%d", seriesID, seasonNumber, episodeNumber)
+
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", episodeURL, nil)
+	if err != nil {
+		log.Printf("An error occurred while creating the request: %v", err)
+		return models.Episode{}, err
+	}
+
+	// Add headers to the request
+	decoded, err := base64.StdEncoding.DecodeString(constants.TEST)
+	if err != nil {
+		log.Printf("Error decoding base64: %v\n", err)
+		return models.Episode{}, err
+	}
+	strtest := string(decoded)
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", strtest))
+
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Printf("An error occurred while making the request: %v", err)
+		return models.Episode{}, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("Received non-200 response: %d", resp.StatusCode)
+		return models.Episode{}, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	var episodeData map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&episodeData); err != nil {
+		log.Printf("An error occurred while decoding the response: %v", err)
+		return models.Episode{}, err
+	}
+
+	episode := models.Episode{
+		Id:            seriesID + fmt.Sprintf("%d%d", seasonNumber, episodeNumber),
+		SeriesId:      seriesID,
+		SeasonName:    season.Name,
+		SeasonNumber:  seasonNumber,
+		EpisodeName:   episodeData["name"].(string),
+		EpisodeNumber: int(episodeData["episode_number"].(float64)),
+		AirDate:       episodeData["air_date"].(string),
+	}
+
+	return episode, nil
+}
+
+func GetSeriesMetadata(series models.Series) (models.Series, []models.Episode, error) {
+	_, err := parseSeries(series)
+	if err != nil {
+		log.Printf("An error occurred while parsing series: %v", err)
+		return series, nil, err
+	}
+
+	//configFolder := constants.ConfigPath
+	if err != nil {
+		log.Printf("An error occurred while getting config folder: %v", err)
+		return series, nil, err
+	}
+
+	//err = downloadMediaArtwork(seriesData, series.Id, configFolder+"/artwork/series")
+	if err != nil {
+		log.Printf("An error occurred while downloading media artwork: %v", err)
+		return series, nil, err
+	}
+
+	var episodes []models.Episode
+	for seasonNumber, season := range series.Seasons {
+		if season.Episodes == nil {
+			continue
+		}
+		for episodeNumber := range season.Episodes {
+			episode, err := parseEpisode(series, season, seasonNumber, episodeNumber)
+			if err != nil {
+				log.Printf("An error occurred while parsing episode: %v", err)
+				continue
+			}
+			episodes = append(episodes, episode)
+		}
+	}
+	return series, episodes, nil
+}
+
+func downloadMediaArtwork(mediaData models.TMDBSeries, mediaID string, folder string) error {
+	mediaFolder := filepath.Join(folder, mediaID)
+	err := os.MkdirAll(mediaFolder, os.ModePerm)
+	if err != nil {
+		log.Printf("An error occurred while creating the folder: %v", err)
+		return err
+	}
+
+	client := &http.Client{}
+
+	// Download poster
+	posterPath := mediaData.PosterPath
+	if posterPath == "" {
+		log.Println("No poster path provided.")
+	} else {
+		posterURL := fmt.Sprintf("https://image.tmdb.org/t/p/original%s", posterPath)
+		posterFilePath := filepath.Join(mediaFolder, "poster.webp")
+		if _, err := os.Stat(posterFilePath); os.IsNotExist(err) {
+			response, err := client.Get(posterURL)
+			if err != nil || response.StatusCode != http.StatusOK {
+				log.Println("Failed to download poster.")
+			} else {
+				defer response.Body.Close()
+				img, _, err := image.Decode(response.Body)
+				if err != nil {
+					log.Printf("An error occurred while decoding the poster: %v", err)
+				} else {
+					file, err := os.Create(posterFilePath)
+					if err != nil {
+						log.Printf("An error occurred while creating the poster file: %v", err)
+					} else {
+						defer file.Close()
+						err = webp.Encode(file, img, &webp.Options{Quality: 5})
+						if err != nil {
+							log.Printf("An error occurred while saving the poster: %v", err)
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Download backdrop
+	backdropPath := mediaData.BackdropPath
+	if backdropPath == "" {
+		log.Println("No backdrop path provided.")
+	} else {
+		backdropURL := fmt.Sprintf("https://image.tmdb.org/t/p/original%s", backdropPath)
+		backdropFilePath := filepath.Join(mediaFolder, "backdrop.webp")
+		if _, err := os.Stat(backdropFilePath); os.IsNotExist(err) {
+			response, err := client.Get(backdropURL)
+			if err != nil || response.StatusCode != http.StatusOK {
+				log.Println("Failed to download backdrop.")
+			} else {
+				defer response.Body.Close()
+				img, _, err := image.Decode(response.Body)
+				if err != nil {
+					log.Printf("An error occurred while decoding the backdrop: %v", err)
+				} else {
+					file, err := os.Create(backdropFilePath)
+					if err != nil {
+						log.Printf("An error occurred while creating the backdrop file: %v", err)
+					} else {
+						defer file.Close()
+						err = webp.Encode(file, img, &webp.Options{Quality: 5})
+						if err != nil {
+							log.Printf("An error occurred while saving the backdrop: %v", err)
+						}
+					}
+				}
+			}
+		}
+	}
+	return nil
 }

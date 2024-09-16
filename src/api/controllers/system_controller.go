@@ -4,18 +4,18 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"transfigurr/interfaces"
 	"transfigurr/models"
-	"transfigurr/repository"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 )
 
 type SystemController struct {
-	Repo *repository.SystemRepository
+	Repo interfaces.SystemRepositoryInterface
 }
 
-func NewSystemController(repo *repository.SystemRepository) *SystemController {
+func NewSystemController(repo interfaces.SystemRepositoryInterface) *SystemController {
 	return &SystemController{
 		Repo: repo,
 	}

@@ -23,46 +23,46 @@ func SeedSettings(db *gorm.DB) {
 			Value: "auto",
 		},
 		{
-			Id:    "default_profile",
+			Id:    "defaultProfile",
 			Value: "1",
 		},
 		{
-			Id:    "queue_status",
+			Id:    "queueStatus",
 			Value: "active",
 		},
 		{
-			Id:    "queue_startup_state",
+			Id:    "queueStartupState",
 			Value: "previous",
 		},
 		{
-			Id:    "log_level",
+			Id:    "logLevel",
 			Value: "info",
 		},
 		{
-			Id:    "media_view",
+			Id:    "mediaView",
 			Value: "posters",
 		}, {
-			Id:    "media_sort",
+			Id:    "mediaSort",
 			Value: "title",
 		},
 		{
-			Id:    "massEditor_sort",
+			Id:    "massEditorSort",
 			Value: "title",
 		},
 		{
-			Id:    "massEditor_sort_direction",
+			Id:    "massEditorSortDirection",
 			Value: "ascending",
 		},
 		{
-			Id:    "massEditor_filter",
+			Id:    "massEditorFilter",
 			Value: "all",
 		},
 		{
-			Id:    "media_sort_direction",
+			Id:    "mediaSortDirection",
 			Value: "ascending",
 		},
 		{
-			Id:    "media_filter",
+			Id:    "mediaFilter",
 			Value: "all",
 		},
 		{
@@ -70,119 +70,119 @@ func SeedSettings(db *gorm.DB) {
 			Value: "ZXlKaGJHY2lPaUpJVXpJMU5pSjkuZXlKaGRXUWlPaUprT1RCalpqQmhaREEyT0dJd01XVXpNVFkxTWpjNVltWXpPRE0xWmpRNU9TSXNJbk4xWWlJNklqWTFOR0UxWVRReE5qZGlOakV6TURFeFpqUXdaV0ZpWVNJc0luTmpiM0JsY3lJNld5SmhjR2xmY21WaFpDSmRMQ0oyWlhKemFXOXVJam94ZlEuNU1LVjViaXV0RmZvQkRuMk14aFMxQU1wbV9DTmE4QTh4WE5XTkFKUVNnTQ==",
 		},
 		{
-			Id:    "media_poster_posterSize",
+			Id:    "mediaPosterPosterSize",
 			Value: "medium",
 		},
 		{
-			Id:    "media_poster_detailedProgressBar",
+			Id:    "mediaPosterDetailedProgressBar",
 			Value: "false",
 		},
 		{
-			Id:    "media_poster_showTitle",
+			Id:    "mediaPosterShowTitle",
 			Value: "true",
 		},
 		{
-			Id:    "media_poster_showMonitored",
+			Id:    "mediaPosterShowMonitored",
 			Value: "true",
 		},
 		{
-			Id:    "media_poster_showProfile",
+			Id:    "mediaPosterShowProfile",
 			Value: "true",
 		},
 		{
-			Id:    "media_table_showNetwork",
+			Id:    "mediaTableShowNetwork",
 			Value: "false",
 		},
 		{
-			Id:    "media_table_showProfile",
+			Id:    "mediaTableShowProfile",
 			Value: "true",
 		},
 		{
-			Id:    "media_table_showSeasons",
+			Id:    "mediaTableShowSeasons",
 			Value: "true",
 		},
 		{
-			Id:    "media_table_showEpisodes",
+			Id:    "mediaTableShowEpisodes",
 			Value: "true",
 		},
 		{
-			Id:    "media_table_showEpisodeCount",
+			Id:    "mediaTableShowEpisodeCount",
 			Value: "false",
 		},
 		{
-			Id:    "media_table_showYear",
+			Id:    "mediaTableShowYear",
 			Value: "true",
 		},
 		{
-			Id:    "media_table_showType",
+			Id:    "mediaTableShowType",
 			Value: "true",
 		},
 		{
-			Id:    "media_table_showSizeOnDisk",
+			Id:    "mediaTableShowSizeOnDisk",
 			Value: "true",
 		},
 		{
-			Id:    "media_table_showSizeSaved",
+			Id:    "mediaTableShowSizeSaved",
 			Value: "true",
 		},
 		{
-			Id:    "media_table_showGenre",
+			Id:    "mediaTableShowGenre",
 			Value: "false",
 		},
 		{
-			Id:    "media_overview_posterSize",
+			Id:    "mediaOverviewPosterSize",
 			Value: "medium",
 		},
 		{
-			Id:    "media_overview_detailedProgressBar",
+			Id:    "mediaOverviewDetailedProgressBar",
 			Value: "false",
 		},
 		{
-			Id:    "media_overview_showMonitored",
+			Id:    "mediaOverviewShowMonitored",
 			Value: "true",
 		},
 		{
-			Id:    "media_overview_showNetwork",
+			Id:    "mediaOverviewShowNetwork",
 			Value: "true",
 		},
 		{
-			Id:    "media_overview_showProfile",
+			Id:    "mediaOverviewShowProfile",
 			Value: "true",
 		},
 		{
-			Id:    "media_overview_showSeasonCount",
+			Id:    "mediaOverviewShowSeasonCount",
 			Value: "true",
 		},
 		{
-			Id:    "media_overview_showPath",
+			Id:    "mediaOverviewShowPath",
 			Value: "false",
 		},
 		{
-			Id:    "media_overview_showSizeOnDisk",
+			Id:    "mediaOverviewShowSizeOnDisk",
 			Value: "true",
 		},
 		{
-			Id:    "queue_filter",
+			Id:    "queueFilter",
 			Value: "all",
 		},
 		{
-			Id:    "queue_page_size",
+			Id:    "queuePageSize",
 			Value: "12",
 		},
 		{
-			Id:    "history_filter",
+			Id:    "historyFilter",
 			Value: "all",
 		},
 		{
-			Id:    "history_page_size",
+			Id:    "historyPageSize",
 			Value: "15",
 		},
 		{
-			Id:    "events_filter",
+			Id:    "eventsFilter",
 			Value: "all",
 		},
 		{
-			Id:    "events_page_size",
+			Id:    "eventsPageSize",
 			Value: "15",
 		},
 		{

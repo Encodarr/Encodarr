@@ -6,13 +6,19 @@ import packageJson from "../../../package.json";
 const version = packageJson.version;
 const Status = () => {
 	const wsContext = useContext(WebSocketContext);
-	const system: any = wsContext?.data?.system;
+	const systemArray: any = wsContext?.data?.system;
+	console.log(systemArray)
+	const systemDictionary: { [key: string]: any } = systemArray.reduce((acc, obj) => {
+		acc[obj.id] = obj.value;
+		return acc;
+	  }, {});
+	  console.log(systemDictionary)
 
 	const [delta, setDelta] = useState("");
 
 	useEffect(() => {
 		const calculateDelta = () => {
-			const timestamp = new Date(system?.start_time);
+			const timestamp = new Date(systemDictionary?.start_time);
 			const now = new Date();
 			const delta = Math.abs(now.getTime() - timestamp.getTime());
 
@@ -36,7 +42,7 @@ const Status = () => {
 		const intervalId = setInterval(calculateDelta, 1000);
 
 		return () => clearInterval(intervalId);
-	}, [system?.start_time]);
+	}, [systemDictionary?.start_time]);
 
 	return (
 		<div className={styles.status}>
@@ -54,8 +60,8 @@ const Status = () => {
 					<tbody>
 						<tr className={styles.row}>
 							<td>/config</td>
-							<td>{formatSize(system?.config_free_space)}</td>
-							<td>{formatSize(system?.config_total_space)}</td>
+							<td>{formatSize(systemDictionary?.config_free_space)}</td>
+							<td>{formatSize(systemDictionary?.config_total_space)}</td>
 							<td>
 								<div
 									style={{
@@ -69,9 +75,9 @@ const Status = () => {
 									<div
 										style={{
 											height: "100%",
-											width: `${((system?.config_total_space -
-												system?.config_free_space) /
-												system?.config_total_space) *
+											width: `${((systemDictionary?.config_total_space -
+												systemDictionary?.config_free_space) /
+												systemDictionary?.config_total_space) *
 												100}%`,
 											backgroundColor: "var(--transfigurrPurple)",
 											borderRadius: "4px",
@@ -82,8 +88,8 @@ const Status = () => {
 						</tr>
 						<tr className={styles.row}>
 							<td>/movies</td>
-							<td>{formatSize(system?.movies_free_space)}</td>
-							<td>{formatSize(system?.movies_total_space)}</td>
+							<td>{formatSize(systemDictionary?.movies_free_space)}</td>
+							<td>{formatSize(systemDictionary?.movies_total_space)}</td>
 							<td>
 								<div
 									style={{
@@ -97,9 +103,9 @@ const Status = () => {
 									<div
 										style={{
 											height: "100%",
-											width: `${((system?.movies_total_space -
-												system?.movies_free_space) /
-												system?.movies_total_space) *
+											width: `${((systemDictionary?.movies_total_space -
+												systemDictionary?.movies_free_space) /
+												systemDictionary?.movies_total_space) *
 												100}%`,
 											backgroundColor: "var(--transfigurrPurple)",
 											borderRadius: "4px",
@@ -110,8 +116,8 @@ const Status = () => {
 						</tr>
 						<tr className={styles.row}>
 							<td>/series</td>
-							<td>{formatSize(system?.series_free_space)}</td>
-							<td>{formatSize(system?.series_total_space)}</td>
+							<td>{formatSize(systemDictionary?.series_free_space)}</td>
+							<td>{formatSize(systemDictionary?.series_total_space)}</td>
 							<td>
 								<div
 									style={{
@@ -125,9 +131,9 @@ const Status = () => {
 									<div
 										style={{
 											height: "100%",
-											width: `${((system?.series_total_space -
-												system?.series_free_space) /
-												system?.series_total_space) *
+											width: `${((systemDictionary?.series_total_space -
+												systemDictionary?.series_free_space) /
+												systemDictionary?.series_total_space) *
 												100}%`,
 											backgroundColor: "var(--transfigurrPurple)",
 											borderRadius: "4px",
@@ -138,8 +144,8 @@ const Status = () => {
 						</tr>
 						<tr className={styles.row}>
 							<td>/transcode</td>
-							<td>{formatSize(system?.transcode_free_space)}</td>
-							<td>{formatSize(system?.transcode_total_space)}</td>
+							<td>{formatSize(systemDictionary?.transcode_free_space)}</td>
+							<td>{formatSize(systemDictionary?.transcode_total_space)}</td>
 							<td>
 								<div
 									style={{
@@ -153,9 +159,9 @@ const Status = () => {
 									<div
 										style={{
 											height: "100%",
-											width: `${((system?.transcode_total_space -
-												system?.transcode_free_space) /
-												system?.transcode_total_space) *
+											width: `${((systemDictionary?.transcode_total_space -
+												systemDictionary?.transcode_free_space) /
+												systemDictionary?.transcode_total_space) *
 												100}%`,
 											backgroundColor: "var(--transfigurrPurple)",
 											borderRadius: "4px",

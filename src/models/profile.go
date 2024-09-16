@@ -2,12 +2,12 @@ package models
 
 type Profile struct {
 	BaseModel
-	Id                        int    `gorm:"primary_key" json:"id"`
+	Id                        int    `gorm:"primary_key;autoIncrement" json:"id"`
 	Name                      string `gorm:"type:varchar(255)" json:"name"`
 	Container                 string `gorm:"type:varchar(255)" json:"container"`
 	Extension                 string `gorm:"type:varchar(255)" json:"extension"`
 	PassThruCommonMetadata    bool   `gorm:"type:boolean" json:"passThruCommonMetadata"`
-	Flipping                  string `gorm:"type:boolean" json:"flipping"`
+	Flipping                  bool   `gorm:"type:boolean" json:"flipping"`
 	Rotation                  int    `gorm:"type:int" json:"rotation"`
 	Cropping                  string `gorm:"type:varchar(255)" json:"cropping"`
 	Limit                     string `gorm:"type:varchar(255)" json:"limit"`
@@ -48,4 +48,5 @@ type Profile struct {
 
 	ProfileAudioLanguages    []ProfileAudioLanguage    `gorm:"foreignkey:ProfileId" json:"profileAudioLanguages"`
 	ProfileSubtitleLanguages []ProfileSubtitleLanguage `gorm:"foreignkey:ProfileId" json:"profileSubtitleLanguages"`
+	ProfileCodecs            []ProfileCodec            `gorm:"foreignkey:ProfileID" json:"codecs"`
 }

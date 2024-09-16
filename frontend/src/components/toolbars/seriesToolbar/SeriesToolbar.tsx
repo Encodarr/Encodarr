@@ -11,10 +11,10 @@ const SeriesToolbar = ({
 	setSelected,
 	series,
 	handleEditClick,
-	series_name,
+	seriesName,
 }: any) => {
 	const handleScanClick = async () => {
-		await fetch(`/api/actions/scan/series/${series_name}`, {
+		await fetch(`/api/actions/scan/series/${seriesName}`, {
 			method: "POST",
 			headers: {
 				Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -23,7 +23,7 @@ const SeriesToolbar = ({
 	};
 
 	const handleMetadataClick = async () => {
-		await fetch(`/api/actions/refresh/metadata/series/${series_name}`, {
+		await fetch(`/api/actions/refresh/metadata/series/${seriesName}`, {
 			method: "POST",
 			headers: {
 				Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -37,7 +37,7 @@ const SeriesToolbar = ({
 			icon={
 				<SyncIcon
 					className={
-						system?.scan_running && system?.scan_target == series?.id
+						system?.scanRunning && system?.scanTarget == series?.id
 							? styles.spinning
 							: styles.svg
 					}
@@ -51,8 +51,8 @@ const SeriesToolbar = ({
 			text="Refresh Metadata"
 			key="metadata"
 			icon={
-				system?.metadata_running == "1" &&
-				system?.metadata_target == series?.id ? (
+				system?.metadataRunning == "1" &&
+				system?.metadataTarget == series?.id ? (
 					<LoadingIcon className={styles.loading} />
 				) : (
 					<RssFeedIcon className={styles.svg} />

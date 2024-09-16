@@ -2,6 +2,7 @@ import InputCheckbox from "../inputs/inputCheckbox/InputCheckbox";
 import InputContainer from "../inputs/inputContainer/InputContainer";
 import styles from "./ProfileAudio.module.scss";
 const ProfileAudio = ({ content, setContent }) => {
+	console.log(content)
 	const languages = {
 		all: "All",
 		eng: "English",
@@ -21,11 +22,11 @@ const ProfileAudio = ({ content, setContent }) => {
 					<InputContainer
 						label="Include Untagged Audio Tracks"
 						type="checkbox"
-						checked={content?.map_untagged_audio_tracks}
+						checked={content?.mapUntaggedAudioTracks}
 						onChange={(e) => {
 							setContent({
 								...content,
-								map_untagged_audio_tracks: e.target.checked,
+								mapUntaggedAudioTracks: e.target.checked,
 							});
 						}}
 					/>
@@ -38,28 +39,33 @@ const ProfileAudio = ({ content, setContent }) => {
 								key={key}
 								className={styles.target}
 								style={
-									!content?.audio_languages?.includes(key)
+									!content?.profileAudioLanguages?.some(lang => lang.language === key)
 										? { opacity: "50%" }
 										: {}
 								}
 								onClick={() => {
-									const selectedValues = [...content.audio_languages];
-									if (selectedValues.includes(key)) {
-										const index = selectedValues.indexOf(key);
-										if (index > -1) {
-											selectedValues.splice(index, 1);
-										}
+									const selectedValues = [...content.profileAudioLanguages];
+									const index = selectedValues.findIndex(lang => lang.language === key);
+									if (index > -1) {
+										selectedValues.splice(index, 1);
 									} else {
-										selectedValues.push(key);
+										selectedValues.push({ profileId: content.id, language: key });
 									}
-									setContent({ ...content, audio_languages: selectedValues });
+									setContent({ ...content, profileAudioLanguages: selectedValues });
 								}}
 							>
 								<InputCheckbox
 									type="checkbox"
-									checked={content?.audio_languages?.includes(key)}
+									checked={content?.profileAudioLanguages?.some(lang => lang.language === key)}
 									onChange={() => {
-										undefined;
+										const selectedValues = [...content.profileAudioLanguages];
+										const index = selectedValues.findIndex(lang => lang.language === key);
+										if (index > -1) {
+											selectedValues.splice(index, 1);
+										} else {
+											selectedValues.push({ profileId: content.id, language: key });
+										}
+										setContent({ ...content, profileAudioLanguages: selectedValues });
 									}}
 								/>
 								<span className={styles.key}>{value}</span>

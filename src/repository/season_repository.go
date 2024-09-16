@@ -19,7 +19,7 @@ func NewSeasonRepository(db *gorm.DB) *SeasonRepository {
 
 func (repo *SeasonRepository) GetSeasons(seriesId string) ([]models.Season, error) {
 	var seasons []models.Season
-	if err := repo.DB.Where("series_id = ?", seriesId).Find(&seasons).Error; err != nil {
+	if err := repo.DB.Where("series_id = ?", seriesId).Preload("Episodes").Find(&seasons).Error; err != nil {
 		return nil, err
 	}
 	return seasons, nil

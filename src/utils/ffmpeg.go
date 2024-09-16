@@ -73,10 +73,8 @@ func AnalyzeMediaFile(filePath string) (string, error) {
 func createFFMPEGFilter(profile models.Profile) []string {
 	filters := []string{}
 
-	if profile.Flipping == "horizontal" {
+	if profile.Flipping {
 		filters = append(filters, "hflip")
-	} else if profile.Flipping == "vertical" {
-		filters = append(filters, "vflip")
 	}
 
 	if profile.Rotation == 90 {

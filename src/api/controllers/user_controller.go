@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"transfigurr/interfaces"
 	"transfigurr/repository"
 
 	"github.com/gin-gonic/gin"
@@ -11,10 +12,10 @@ import (
 )
 
 type UserController struct {
-	Repo *repository.UserRepository
+	Repo interfaces.UserRepositoryInterface
 }
 
-func NewUserController(repo *repository.UserRepository) *UserController {
+func NewUserController(repo interfaces.UserRepositoryInterface) *UserController {
 	return &UserController{
 		Repo: repo,
 	}

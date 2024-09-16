@@ -4,17 +4,17 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"transfigurr/interfaces"
 	"transfigurr/models"
-	"transfigurr/repository"
 
 	"github.com/gin-gonic/gin"
 )
 
 type SeasonController struct {
-	Repo *repository.SeasonRepository
+	Repo interfaces.SeasonRepositoryInterface
 }
 
-func NewSeasonController(repo *repository.SeasonRepository) *SeasonController {
+func NewSeasonController(repo interfaces.SeasonRepositoryInterface) *SeasonController {
 	return &SeasonController{
 		Repo: repo,
 	}

@@ -10,5 +10,5 @@ type Season struct {
 	SeriesId        string    `gorm:"type:varchar(255)" json:"seriesId"`
 	SpaceSaved      int       `gorm:"type:varchar(255)" json:"spaceSaved"`
 	MissingEpisodes int       `gorm:"type:int" json:"missingEpisodes"`
-	Episodes        []Episode `gorm:"foreignkey:SeriesId" json:"episodes"`
+	Episodes        []Episode `gorm:"foreignkey:SeasonId" json:"episodes"`
 }

@@ -1,19 +1,15 @@
 package repository
 
+import "transfigurr/models"
+
 type CodecRepository struct{}
 
 func NewCodecRepository() *CodecRepository {
 	return &CodecRepository{}
 }
 
-func (repo *CodecRepository) GetCodecs() map[string]struct {
-	Containers []string
-	Encoders   []string
-} {
-	return map[string]struct {
-		Containers []string
-		Encoders   []string
-	}{
+func (r *CodecRepository) GetCodecs() map[string]models.Codec {
+	return map[string]models.Codec{
 		"Any":   {Containers: []string{}, Encoders: []string{}},
 		"h264":  {Containers: []string{"mp4", "matroska"}, Encoders: []string{"libx264", "h264"}},
 		"hevc":  {Containers: []string{"mp4", "matroska"}, Encoders: []string{"libx265"}},
@@ -24,29 +20,15 @@ func (repo *CodecRepository) GetCodecs() map[string]struct {
 	}
 }
 
-func (repo *CodecRepository) GetContainers() map[string]struct {
-	Containers []string
-} {
-	return map[string]struct {
-		Containers []string
-	}{
-		"mp4":      {Containers: []string{"mp4", "m4a", "m4v", "f4v", "f4a", "m4b", "m4r", "f4b", "mov"}},
-		"matroska": {Containers: []string{"mkv", "mk3d", "mka", "mks"}},
+func (r *CodecRepository) GetContainers() map[string]models.Container {
+	return map[string]models.Container{
+		"mp4":      {Extensions: []string{"mp4", "m4a", "m4v", "f4v", "f4a", "m4b", "m4r", "f4b", "mov"}},
+		"matroska": {Extensions: []string{"mkv", "mk3d", "mka", "mks"}},
 	}
 }
 
-func (repo *CodecRepository) GetEncoders() map[string]struct {
-	Presets []string
-	Tune    []string
-	Profile []string
-	Level   []string
-} {
-	return map[string]struct {
-		Presets []string
-		Tune    []string
-		Profile []string
-		Level   []string
-	}{
+func (r *CodecRepository) GetEncoders() map[string]models.Encoder {
+	return map[string]models.Encoder{
 		"h264": {
 			Presets: []string{"ultrafast", "superfast", "veryfast", "faster", "fast", "medium", "slow", "slower", "veryslow", "placebo"},
 			Tune:    []string{"none", "film", "animation", "grain", "stillimage", "psnr", "ssim", "zerolatency"},

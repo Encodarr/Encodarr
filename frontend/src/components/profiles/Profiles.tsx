@@ -10,6 +10,7 @@ const Profiles = () => {
 	const [selectedProfile, setSelectedProfile] = useState<any>({});
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const handleProfileClick = (profile: any) => {
+
 		setSelectedProfile(profile);
 		setContent(profile);
 		setIsModalOpen(true);
@@ -27,7 +28,7 @@ const Profiles = () => {
 	};
 
 	const onModalSave = async () => {
-		await fetch(`/api/profiles`, {
+		await fetch(`/api/profiles/` + content.id, {
 			method: "PUT",
 			headers: {
 				"Content-Type": "application/json",
@@ -38,11 +39,7 @@ const Profiles = () => {
 		setIsModalOpen(false);
 	};
 	const [content, setContent] = useState(selectedProfile);
-	const profilesArray: any = [];
 
-	for (const i in profiles) {
-		profilesArray.push(profiles[i]);
-	}
 
 	return (
 		<div className={styles.profiles}>
@@ -61,7 +58,7 @@ const Profiles = () => {
 				<div className={styles.codecProfiles}>
 					<div className={styles.header}>Profiles</div>
 					<div className={styles.profileContainer}>
-						{profilesArray?.map((profile: any) => (
+						{profiles?.map((profile: any) => (
 							<Profile
 								name={profile?.name}
 								key={profile?.name}
@@ -74,8 +71,16 @@ const Profiles = () => {
 							type={"add"}
 							key={"add"}
 							name={""}
-							codecs={[]}
-							profile={{}}
+							codecs={profiles[0].codecs}
+							profile={{
+								...profiles[0],
+								id: profiles.length + 1,
+								name: "",
+								codecs: [],
+								profileAudioLanguages: [],
+								profileSubtitleLanguages: []
+							}}
+
 							onClick={handleProfileClick}
 						/>
 					</div>

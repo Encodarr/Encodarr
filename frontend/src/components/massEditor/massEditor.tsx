@@ -19,9 +19,9 @@ const MassEditor = () => {
 	const [selected, setSelected] = useState<string | null>(null);
 	const [selectAll, setSelectAll] = useState(false);
 
-	const sort = settings?.massEditor_sort;
-	const sortDirection = settings?.massEditor_sort_direction;
-	const filter = settings?.massEditor_filter;
+	const sort = settings?.massEditorSort;
+	const sortDirection = settings?.massEditorSortDirection;
+	const filter = settings?.massEditorFilter;
 	const sortedMedia = sortAndFilter(
 		series,
 		movies,
@@ -50,10 +50,10 @@ const MassEditor = () => {
 	useEffect(() => {
 		const applyChanges = () => {
 			for (const media of selectedMediaRef.current) {
-				const type = media?.missing_episodes != undefined ? "series" : "movies";
+				const type = media?.missingEpisodes != undefined ? "series" : "movies";
 				media.monitored =
 					parseInt(monitored) !== -1 ? parseInt(monitored) : undefined;
-				media.profile_id =
+				media.profileId =
 					parseInt(profile) !== 0 ? parseInt(profile) : undefined;
 				fetch(`/api/${type}/${media.id}`, {
 					method: "PUT",

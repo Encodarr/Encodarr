@@ -4,7 +4,13 @@ import { WebSocketContext } from "../../contexts/webSocketContext";
 import { formatSize } from "../../utils/format";
 const Footer = () => {
 	const wsContext = useContext(WebSocketContext);
-	const system = wsContext?.data?.system;
+	const systemArray: any = wsContext?.data?.system;
+	
+	const systemDictionary: { [key: string]: any } = systemArray.reduce((acc, obj) => {
+		acc[obj.id] = obj;
+		return acc;
+	  }, {});
+	  console.log(systemDictionary)
 	return (
 		<div className={styles.footer}>
 			<div className={styles.keyContainer}>
@@ -39,31 +45,31 @@ const Footer = () => {
 			</div>
 			<div className={styles.dataContainer}>
 				<div className={styles.section}>
-					<div className={styles.data}>Series {system?.series_count}</div>
-					<div className={styles.data}>Ended {system?.ended_count}</div>
+					<div className={styles.data}>Series {systemDictionary?.series_count?.value}</div>
+					<div className={styles.data}>Ended {systemDictionary?.ended_count?.value}</div>
 					<div className={styles.data}>
-						Continuing {system?.continuing_count}
+						Continuing {systemDictionary?.continuing_count?.value}
 					</div>
 				</div>
 				<div className={styles.section}>
-					<div className={styles.data}>Monitored {system?.monitored_count}</div>
+					<div className={styles.data}>Monitored {systemDictionary?.monitored_count?.value}</div>
 
 					<div className={styles.data}>
-						Unmonitored {system?.unmonitored_count}
+						Unmonitored {systemDictionary?.unmonitored_count?.value}
 					</div>
 				</div>
 				<div className={styles.section}>
-					<div className={styles.data}>Episodes {system?.episode_count}</div>
-					<div className={styles.data}>Files {system?.files_count}</div>
+					<div className={styles.data}>Episodes {systemDictionary?.episode_count?.value}</div>
+					<div className={styles.data}>Files {systemDictionary?.files_count?.value}</div>
 				</div>
 				<div className={styles.section}>
 					<div className={styles.data}>
 						{"Size on Disk   "}
-						{formatSize(system?.size_on_disk)}
+						{formatSize(systemDictionary?.size_on_disk?.value)}
 					</div>
 					<div className={styles.data}>
 						{"Space Saved   "}
-						{formatSize(system?.space_saved)}
+						{formatSize(systemDictionary?.space_saved?.value)}
 					</div>
 				</div>
 			</div>
