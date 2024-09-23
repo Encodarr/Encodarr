@@ -1,9 +1,10 @@
 package repository
 
 import (
+	"log"
 	"transfigurr/models"
 
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 type SettingRepository struct {
@@ -42,7 +43,8 @@ func (repo *SettingRepository) CreateSetting(setting models.Setting) error {
 }
 
 func (repo *SettingRepository) UpdateSetting(setting models.Setting) error {
-	return repo.DB.Save(&setting).Error
+	log.Print(setting.Id, setting.Value)
+	return repo.DB.Save(&setting).Select("*").Error
 }
 
 func (repo *SettingRepository) DeleteSetting(setting models.Setting) error {

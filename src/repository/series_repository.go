@@ -1,9 +1,10 @@
 package repository
 
 import (
+	"errors"
 	"transfigurr/models"
 
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 type SeriesRepository struct {
@@ -27,19 +28,26 @@ func (repo *SeriesRepository) GetSeries() ([]models.Series, error) {
 func (repo *SeriesRepository) UpsertSeries(id string, inputSeries models.Series) (models.Series, error) {
 	var series models.Series
 	inputSeries.Id = id
+
+	// Try to find the series by ID
 	result := repo.DB.Where("id = ?", id).First(&series)
 
-	if result.RecordNotFound() {
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		// Series not found, create a new one
 		series = inputSeries
 		if err := repo.DB.Create(&series).Error; err != nil {
 			return models.Series{}, err
 		}
+	} else if result.Error != nil {
+		// Other errors
+		return models.Series{}, result.Error
 	} else {
-		repo.DB.Model(&series).Updates(inputSeries)
-		if err := repo.DB.Save(&series).Error; err != nil {
+		// Series found, update it
+		if err := repo.DB.Model(&series).Select("*").Updates(inputSeries).Error; err != nil {
 			return models.Series{}, err
 		}
 	}
+
 	return series, nil
 }
 

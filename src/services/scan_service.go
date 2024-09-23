@@ -2,8 +2,10 @@ package services
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"sync"
+	"transfigurr/constants"
 	"transfigurr/interfaces"
 	"transfigurr/models"
 	"transfigurr/tasks"
@@ -55,6 +57,48 @@ func NewScanService(eventService interfaces.EventServiceInterface, metadataServi
 	return service
 }
 
+func (s *ScanService) EnqueueAll() {
+	s.EnqueueAllMovies()
+	s.EnqueueAllSeries()
+}
+
+func (s *ScanService) EnqueueAllMovies() {
+	movies, err := s.movieRepo.GetMovies()
+	if err != nil {
+		log.Print(err)
+		return
+	}
+	movieFiles, err := ioutil.ReadDir(constants.MoviesPath)
+	if err != nil {
+		return
+	}
+	for _, file := range movieFiles {
+		s.Enqueue(models.Item{Id: file.Name(), Type: "movie"})
+	}
+	for _, movieItem := range movies {
+		s.Enqueue(models.Item{Id: movieItem.Id, Type: "movie"})
+	}
+}
+
+func (s *ScanService) EnqueueAllSeries() {
+	series, err := s.seriesRepo.GetSeries()
+	if err != nil {
+		log.Print(err)
+		return
+	}
+	seriesFiles, err := ioutil.ReadDir(constants.SeriesPath)
+	if err != nil {
+		return
+	}
+	for _, file := range seriesFiles {
+		s.Enqueue(models.Item{Id: file.Name(), Type: "series"})
+	}
+
+	for _, seriesItem := range series {
+		s.Enqueue(models.Item{Id: seriesItem.Id, Type: "series"})
+	}
+}
+
 func (s *ScanService) Enqueue(item models.Item) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -83,13 +127,16 @@ func (s *ScanService) process() {
 func (s *ScanService) processItem(item models.Item) {
 	if item.Type == "movie" {
 		tasks.ScanMovie(item.Id, s.movieRepo, s.settingRepo, s.profileRepo)
+		log.Print("bouta validate", item.Id)
+		tasks.ValidateMovie(item.Id, s.movieRepo)
 		movie, err := s.movieRepo.GetMovieById(item.Id)
 		if err != nil {
 			log.Print(err)
+			return
 		}
 
 		if movie.Name == "" {
-			s.eventService.Log("INFO", "scan", "Scanning series: "+item.Id)
+			s.eventService.Log("INFO", "scan", "Scanning movie: "+item.Id)
 			s.metadataService.Enqueue(models.Item{Type: "movie", Id: movie.Id})
 		}
 		if movie.Missing && movie.Monitored {
@@ -99,6 +146,7 @@ func (s *ScanService) processItem(item models.Item) {
 		s.eventService.Log("INFO", "scan", "Scanning series: "+item.Id)
 		log.Print("Scanning series: " + item.Id)
 		tasks.ScanSeries(s.encodeService, item.Id, s.seriesRepo, s.seasonRepo, s.episodeRepo, s.settingRepo, s.profileRepo)
+		tasks.ValidateSeries(item.Id, s.seriesRepo, s.seasonRepo, s.episodeRepo)
 		series, err := s.seriesRepo.GetSeriesByID(item.Id)
 		if err != nil {
 			log.Print(err)

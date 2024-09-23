@@ -1,9 +1,10 @@
 package repository
 
 import (
+	"errors"
 	"transfigurr/models"
 
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 type MovieRepository struct {
@@ -24,23 +25,24 @@ func (repo *MovieRepository) GetMovies() ([]models.Movie, error) {
 	return movieList, nil
 }
 
-func (repo *MovieRepository) UpsertMovie(id string, inputMovie models.Movie) (models.Movie, error) {
-	var movie models.Movie
-	inputMovie.Id = id
-	result := repo.DB.Where("id = ?", id).First(&movie)
-
-	if result.RecordNotFound() {
-		movie = inputMovie
-		if err := repo.DB.Create(&movie).Error; err != nil {
-			return models.Movie{}, err
+func (repo *MovieRepository) UpsertMovie(id string, movie models.Movie) (models.Movie, error) {
+	var existingMovie models.Movie
+	if err := repo.DB.Where("id = ?", id).First(&existingMovie).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			// If the movie does not exist, create a new one
+			if err := repo.DB.Create(&movie).Error; err != nil {
+				return models.Movie{}, err
+			}
+			return movie, nil
 		}
-	} else {
-		repo.DB.Model(&movie).Updates(inputMovie)
-		if err := repo.DB.Save(&movie).Error; err != nil {
-			return models.Movie{}, err
-		}
+		return models.Movie{}, err
 	}
-	return movie, nil
+
+	// If the movie exists, update it
+	if err := repo.DB.Model(&existingMovie).Select("*").Updates(movie).Error; err != nil {
+		return models.Movie{}, err
+	}
+	return existingMovie, nil
 }
 
 func (repo *MovieRepository) GetMovieById(id string) (models.Movie, error) {

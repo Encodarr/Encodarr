@@ -39,7 +39,7 @@ func (ctrl UserController) GetUsers(c *gin.Context) {
 func (ctrl UserController) UpdateUser(c *gin.Context) {
 	username := c.PostForm("username")
 	password := c.PostForm("password")
-
+	log.Print(username, password, "hereeee")
 	user, err := ctrl.Repo.GetUser()
 	if err != nil {
 		c.JSON(http.StatusForbidden, gin.H{"error": "User not found."})

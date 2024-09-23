@@ -7,7 +7,7 @@ const QueueModal = ({ isOpen, setIsOpen, content, setContent }: any) => {
   };
   const onModalSave = async () => {
     for (const key in content) {
-      fetch(`/api/settings`, {
+      fetch(`/api/settings/${key}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -30,11 +30,11 @@ const QueueModal = ({ isOpen, setIsOpen, content, setContent }: any) => {
       <InputContainer
         label="Page Size"
         type="text"
-        selected={content.queue_page_size.value}
+        selected={content.queuePageSize.value}
         onChange={(e: any) => {
           setContent({
             ...content,
-            queue_page_size: e.target.value,
+            queuePageSize: e.target.value,
           });
         }}
       />

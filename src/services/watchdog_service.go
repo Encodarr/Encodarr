@@ -1,43 +1,56 @@
 package services
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 	"regexp"
 	"time"
+	"transfigurr/interfaces"
+	"transfigurr/models"
 
 	"github.com/fsnotify/fsnotify"
 )
 
 type WatchdogHandler struct {
-	mediaType string
-	watcher   *fsnotify.Watcher
+	mediaType   string
+	watcher     *fsnotify.Watcher
+	scanService interfaces.ScanServiceInterface
 }
 
-func NewWatchdogService(queueSize int) *WatchdogHandler {
+func NewWatchdogService(scanService interfaces.ScanServiceInterface) *WatchdogHandler {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		log.Fatal(err)
 	}
-	return &WatchdogHandler{watcher: watcher}
+	return &WatchdogHandler{watcher: watcher, scanService: scanService}
 }
 
 func (w *WatchdogHandler) OnCreated(path string) {
 	log.Println("Watchdog detected a file creation")
-	w.WaitUntilDone(path)
+	if !isDirectory(path) {
+		w.WaitUntilDone(path)
+	}
 	w.HandleChange(path)
 }
 
 func (w *WatchdogHandler) OnDeleted(path string) {
-	log.Println("Watchdog detected a file deletion")
+	log.Println("Watchdog detected a file deletion", path)
+	if !isDirectory(path) {
+		log.Println("Path is not a directory, waiting until done:", path)
+		w.WaitUntilDone(path)
+	} else {
+		log.Println("Path is a directory, skipping WaitUntilDone:", path)
+	}
+	log.Println("Handling change for path:", path)
 	w.HandleChange(path)
 }
 
 func (w *WatchdogHandler) OnModified(path string) {
 	log.Println("Watchdog detected a file modification")
-	w.WaitUntilDone(path)
+	if !isDirectory(path) {
+		w.WaitUntilDone(path)
+	}
 	w.HandleChange(path)
 }
 
@@ -59,20 +72,24 @@ func (w *WatchdogHandler) WaitUntilDone(path string) {
 }
 
 func (w *WatchdogHandler) HandleChange(path string) {
+	log.Print("handle change for", path)
 	var media string
 	if w.mediaType == "series" {
 		media = GetSeriesName(path)
-		if media != "" {
-			fmt.Printf("Enqueue series: %s\n", media)
+		if media == "" {
+			w.scanService.EnqueueAllSeries()
 		} else {
-			fmt.Println("Enqueue all series")
+			w.scanService.Enqueue(models.Item{Id: media, Type: "series"})
 		}
 	} else {
 		media = GetMovieName(path)
-		if media != "" {
-			fmt.Printf("Enqueue movie: %s\n", media)
+		log.Print("media", media)
+		if media == "" {
+			log.Print("Enqueuing all movies")
+			w.scanService.EnqueueAllMovies()
 		} else {
-			fmt.Println("Enqueue all movies")
+			log.Print("Enqueuing movie", media)
+			w.scanService.Enqueue(models.Item{Id: media, Type: "movie"})
 		}
 	}
 }
@@ -153,6 +170,14 @@ func getFileSize(path string) (int64, error) {
 		return 0, err
 	}
 	return fileInfo.Size(), nil
+}
+
+func isDirectory(path string) bool {
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	return fileInfo.IsDir()
 }
 
 func (w *WatchdogHandler) Startup(directory, contentType string) {

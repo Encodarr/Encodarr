@@ -26,7 +26,6 @@ const ToolBarOption = ({
     }
   };
   const itemRef: any = useRef(null);
-
   useEffect(() => {
     function handleClickOutside(event: any) {
       if (itemRef.current && !itemRef.current.contains(event.target)) {
@@ -69,19 +68,21 @@ const ToolBarOption = ({
                 }}
               >
                 <div className={styles.text}>{item?.text}</div>
-                {item?.id === settings[item?.setting_id].value || "" ? (
+                {item?.id === settings[item?.settingId] || "" ? (
                   <div className={styles.svgContainer}>
                     {sort ? (
                       <ArrowDropdownIcon
                         style={
-                          sortDirection === "descending"
+                          sortDirection == "descending"
                             ? { transform: "rotate(180deg)" }
                             : {}
                         }
                         className={styles.svg}
                       />
                     ) : (
+                      <>
                       <CheckmarkIcon className={styles.svg} />
+                      </>
                     )}
                   </div>
                 ) : (

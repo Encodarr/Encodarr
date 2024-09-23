@@ -10,7 +10,13 @@ const MassEditor = () => {
 	const wsContext: any = useContext(WebSocketContext);
 	const series: any = wsContext?.data?.series;
 	const movies: any = wsContext?.data?.movies;
-	const settings: any = wsContext?.data?.settings;
+	const settings: any = wsContext?.data?.settings
+	? Object.keys(wsContext?.data?.settings).reduce((acc, key) => {
+		acc[key] = wsContext?.data?.settings[key].value;
+		return acc;
+	  }, {})
+	: {};
+
 	const profiles: any = wsContext?.data?.profiles;
 	const [selectedMedia, setSelectedMedia] = useState<any>([]);
 	const selectedMediaRef = useRef(selectedMedia);
@@ -52,7 +58,7 @@ const MassEditor = () => {
 			for (const media of selectedMediaRef.current) {
 				const type = media?.missingEpisodes != undefined ? "series" : "movies";
 				media.monitored =
-					parseInt(monitored) !== -1 ? parseInt(monitored) : undefined;
+					parseInt(monitored) !== -1 ? Boolean(parseInt(monitored)) : media.monitored;
 				media.profileId =
 					parseInt(profile) !== 0 ? parseInt(profile) : undefined;
 				fetch(`/api/${type}/${media.id}`, {

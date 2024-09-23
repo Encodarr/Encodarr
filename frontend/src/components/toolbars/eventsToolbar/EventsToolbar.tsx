@@ -11,7 +11,7 @@ const EventsToolbar = ({
 	settings,
 }) => {
 	const setSetting = async (key: string, value: any) => {
-		await fetch(`/api/settings`, {
+		await fetch(`/api/settings/${key}`, {
 			method: "PUT",
 			headers: {
 				"Content-Type": "application/json",
@@ -54,29 +54,29 @@ const EventsToolbar = ({
 							text: "All",
 							id: "all",
 							key: "all",
-							setting_id: "events_filter",
-							onClick: () => setSetting("events_filter", "all"),
+							settingId: "eventsFilter",
+							onClick: () => setSetting("eventsFilter", "all"),
 						},
 						{
 							text: "Info",
 							id: "info",
 							key: "info",
-							setting_id: "events_filter",
-							onClick: () => setSetting("events_filter", "info"),
+							settingId: "eventsFilter",
+							onClick: () => setSetting("eventsFilter", "info"),
 						},
 						{
 							text: "Warn",
 							id: "warn",
 							key: "warn",
-							setting_id: "events_filter",
-							onClick: () => setSetting("events_filter", "warn"),
+							settingId: "eventsFilter",
+							onClick: () => setSetting("eventsFilter", "warn"),
 						},
 						{
 							text: "Error",
 							id: "error",
 							key: "error",
-							setting_id: "events_filter",
-							onClick: () => setSetting("events_filter", "error"),
+							settingId: "eventsFilter",
+							onClick: () => setSetting("eventsFilter", "error"),
 						},
 					]}
 				/>,

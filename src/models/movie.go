@@ -13,7 +13,7 @@ type Movie struct {
 	Size         int    `gorm:"type:int" json:"size"`
 	SpaceSaved   int    `gorm:"type:int" json:"spaceSaved"`
 	ProfileID    int    `gorm:"type:int" json:"profileId"`
-	Monitored    bool   `gorm:"type:boolean" json:"monitored"`
+	Monitored    bool   `gorm:"type:boolean;default:false" json:"monitored"`
 	Missing      bool   `gorm:"type:boolean" json:"missing"`
 	Studio       string `gorm:"type:varchar(255)" json:"studio"`
 	OriginalSize int    `gorm:"type:int" json:"originalSize"`

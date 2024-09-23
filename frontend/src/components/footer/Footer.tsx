@@ -10,7 +10,6 @@ const Footer = () => {
 		acc[obj.id] = obj;
 		return acc;
 	  }, {});
-	  console.log(systemDictionary)
 	return (
 		<div className={styles.footer}>
 			<div className={styles.keyContainer}>

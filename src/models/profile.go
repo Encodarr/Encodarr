@@ -48,5 +48,5 @@ type Profile struct {
 
 	ProfileAudioLanguages    []ProfileAudioLanguage    `gorm:"foreignkey:ProfileId" json:"profileAudioLanguages"`
 	ProfileSubtitleLanguages []ProfileSubtitleLanguage `gorm:"foreignkey:ProfileId" json:"profileSubtitleLanguages"`
-	ProfileCodecs            []ProfileCodec            `gorm:"foreignkey:ProfileID" json:"codecs"`
+	ProfileCodecs            []ProfileCodec            `gorm:"foreignkey:ProfileId" json:"codecs"`
 }

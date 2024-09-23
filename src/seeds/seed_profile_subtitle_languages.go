@@ -3,13 +3,13 @@ package seeds
 import (
 	"transfigurr/models"
 
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 func SeedProfileSubtitleLanguages(db *gorm.DB) {
-	if !db.HasTable(&models.Seed{}) {
-		db.CreateTable(&models.Seed{})
-		db.Model(&models.Seed{}).AddUniqueIndex("idx_name", "name")
+	if !db.Migrator().HasTable(&models.Seed{}) {
+		db.Migrator().CreateTable(&models.Seed{})
+		db.Migrator().CreateIndex(&models.Seed{}, "idx_name")
 	}
 
 	var seed models.Seed
@@ -18,6 +18,10 @@ func SeedProfileSubtitleLanguages(db *gorm.DB) {
 		return
 	}
 	defaultProfileSubtitleLanguages := []models.ProfileSubtitleLanguage{
+		{
+			ProfileId: 0,
+			Language:  "all",
+		},
 		{
 			ProfileId: 1,
 			Language:  "all",
@@ -40,10 +44,6 @@ func SeedProfileSubtitleLanguages(db *gorm.DB) {
 		},
 		{
 			ProfileId: 6,
-			Language:  "all",
-		},
-		{
-			ProfileId: 7,
 			Language:  "all",
 		},
 	}

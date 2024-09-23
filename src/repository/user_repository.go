@@ -4,7 +4,7 @@ import (
 	"errors"
 	"transfigurr/models"
 
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 type UserRepository struct {

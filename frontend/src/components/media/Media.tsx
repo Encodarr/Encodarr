@@ -19,10 +19,9 @@ const Media = () => {
       return acc;
     }, {})
   : {};
-
   const profiles = wsContext?.data?.profiles;
-  const view = settings?.mediaView;
-  const sort = settings?.mediaSort;
+  const view = settings?.mediaView
+  const sort = settings?.mediaSort
   const filter = settings?.mediaFilter;
   const sortDirection = settings?.mediaSortDirection;
   const sortedMedia = sortAndFilter(
@@ -36,7 +35,6 @@ const Media = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [content, setContent] = useState({});
   const [selected, setSelected] = useState(null);
-  console.log(sortedMedia);
   return (
     <div className={styles.media}>
       <MediaToolbar

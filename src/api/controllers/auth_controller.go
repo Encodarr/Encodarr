@@ -43,54 +43,65 @@ func (ctrl *AuthController) GetActivated(c *gin.Context) {
 }
 
 func (ctrl *AuthController) Register(c *gin.Context) {
-	username := c.PostForm("username")
-	password := c.PostForm("password")
+	var user models.User
+	if err := c.ShouldBindJSON(&user); err != nil {
+		log.Printf("Error binding JSON: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
+	log.Printf("Username: %s, Password: %s", user.Username, user.Password)
 
+	// Check if user already exists
 	_, err := ctrl.Repo.GetUser()
 	if err == nil {
 		c.JSON(http.StatusForbidden, gin.H{"error": "User already registered"})
 		return
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	// Hash the password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error hashing password"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
+		return
+	}
+	user.Password = string(hashedPassword)
+
+	// Create the user
+	if err := ctrl.Repo.CreateUser(&user); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
 		return
 	}
 
-	secret, err := generateSecretKey()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error generating secret key"})
-		return
-	}
-	user := models.User{
-		Username: username,
-		Password: string(hashedPassword),
-		Secret:   secret,
-	}
-	if err := ctrl.Repo.CreateUser(user); err != nil {
-		log.Print(err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error creating user"})
-		return
-	}
-	c.JSON(http.StatusCreated, gin.H{"message": "User created successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "User registered successfully"})
 }
 
 func (ctrl *AuthController) Login(c *gin.Context) {
-	username := c.PostForm("username")
-	password := c.PostForm("password")
+	var loginData struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+
+	if err := c.ShouldBindJSON(&loginData); err != nil {
+		log.Printf("Error binding JSON: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
+	log.Printf("Username: %s, Password: %s", loginData.Username, loginData.Password)
+
 	user, err := ctrl.Repo.GetUser()
-	if err != nil || user.Username != username {
+	if err != nil || user.Username != loginData.Username {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(loginData.Password))
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"username": username,
+		"username": loginData.Username,
 	})
 	tokenString, err := token.SignedString([]byte(user.Secret))
 	if err != nil {

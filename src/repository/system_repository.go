@@ -1,9 +1,10 @@
 package repository
 
 import (
+	"errors"
 	"transfigurr/models"
 
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 type SystemRepository struct {
@@ -29,7 +30,7 @@ func (repo *SystemRepository) UpsertSystem(systemId string, inputSystem models.S
 	inputSystem.Id = systemId
 	result := repo.DB.Where("id = ?", systemId).First(&system)
 
-	if result.RecordNotFound() {
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		system = inputSystem
 		if err := repo.DB.Create(&system).Error; err != nil {
 			return models.System{}, err

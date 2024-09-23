@@ -5,7 +5,7 @@ import (
 	"time"
 	"transfigurr/models"
 
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 type EventRepository struct {

@@ -1,10 +1,11 @@
 package repository
 
 import (
+	"errors"
 	"strconv"
 	"transfigurr/models"
 
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 type EpisodeRepository struct {
@@ -31,7 +32,7 @@ func (repo *EpisodeRepository) UpsertEpisode(seriesId string, seasonNumber int, 
 	inputEpisode.SeriesId = seriesId
 	result := repo.DB.Where("id = ?", seriesId+strconv.Itoa(seasonNumber)+strconv.Itoa(episodeNumber)).First(&episode)
 
-	if result.RecordNotFound() {
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		episode = inputEpisode
 		if err := repo.DB.Create(&episode).Error; err != nil {
 			return models.Episode{}, err

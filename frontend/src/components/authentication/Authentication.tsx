@@ -50,7 +50,6 @@ const Authentication = () => {
   if (!loaded) {
     return null;
   }
-  console.log(activated);
   return (
     <>
       <div className={styles.authenticate}>

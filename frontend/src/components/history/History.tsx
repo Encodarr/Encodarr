@@ -7,8 +7,12 @@ import HistoryTable from "../tables/historyTable/HistoryTable";
 
 const History = () => {
 	const wsContext: any = useContext(WebSocketContext);
-	const settings: any = wsContext?.data?.settings;
-	const history = wsContext?.data?.history;
+	const settings: any = wsContext?.data?.settings
+	? Object.keys(wsContext?.data?.settings).reduce((acc, key) => {
+		acc[key] = wsContext?.data?.settings[key].value;
+		return acc;
+	  }, {})
+	: {};	const history = wsContext?.data?.history;
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [content, setContent] = useState({});
 	const [selected, setSelected] = useState(null);

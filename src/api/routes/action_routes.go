@@ -7,14 +7,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func ActionRoutes(rg *gin.RouterGroup, scanService interfaces.ScanServiceInterface) {
-	controller := controllers.NewActionController(scanService)
+func ActionRoutes(rg *gin.RouterGroup, scanService interfaces.ScanServiceInterface, metadataService interfaces.MetadataServiceInterface) {
+	controller := controllers.NewActionController(scanService, metadataService)
 	rg.POST("/actions/restart", controller.Restart)
 	rg.POST("/actions/shutdown", controller.Shutdown)
 	rg.POST("/actions/refresh/metadata", controller.RefreshMetadata)
 	rg.POST("/actions/scan", controller.Scan)
 	rg.POST("/actions/refresh/metadata/series/:series_id", controller.RefreshSeriesMetadata)
 	rg.POST("/actions/scan/series/:series_id", controller.ScanSeries)
-	rg.POST("/actions/refresh/metadata/movie/:movie_id", controller.RefreshMovieMetadata)
-	rg.POST("/actions/scan/movie/:movie_id", controller.ScanMovie)
+	rg.POST("/actions/refresh/metadata/movies/:movie_id", controller.RefreshMovieMetadata)
+	rg.POST("/actions/scan/movies/:movie_id", controller.ScanMovie)
 }

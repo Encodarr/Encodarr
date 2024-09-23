@@ -1,10 +1,11 @@
 package repository
 
 import (
+	"errors"
 	"log"
 	"transfigurr/models"
 
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 type ProfileRepository struct {
@@ -36,25 +37,20 @@ func (repo *ProfileRepository) GetProfileById(profileId int) (models.Profile, er
 func (repo *ProfileRepository) UpsertProfile(profileId int, inputProfile models.Profile) (models.Profile, error) {
 	var profile models.Profile
 
-	// Log the input profile for debugging
-	log.Printf("Input Profile: %+v", inputProfile)
+	if repo.DB == nil {
+		log.Printf("Database connection is nil")
+		return models.Profile{}, errors.New("database connection is nil")
+	}
 
 	result := repo.DB.Where("id = ?", profileId).First(&profile)
-	if result.RecordNotFound() {
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		profile = inputProfile
 		if err := repo.DB.Create(&profile).Error; err != nil {
 			log.Printf("Error creating profile: %v", err)
 			return models.Profile{}, err
 		}
 	} else {
-		repo.DB.Model(&profile).Updates(inputProfile)
-		repo.DB.Model(&profile).UpdateColumn("pass_thru_common_metadata", inputProfile.PassThruCommonMetadata)
-		repo.DB.Model(&profile).UpdateColumn("flipping", inputProfile.Flipping)
-		repo.DB.Model(&profile).UpdateColumn("grayscale", inputProfile.Grayscale)
-		repo.DB.Model(&profile).UpdateColumn("multipass_encoding", inputProfile.MultipassEncoding)
-		repo.DB.Model(&profile).UpdateColumn("fast_decode", inputProfile.FastDecode)
-		repo.DB.Model(&profile).UpdateColumn("map_untagged_audio_tracks", inputProfile.MapUntaggedAudioTracks)
-		repo.DB.Model(&profile).UpdateColumn("map_untagged_subtitle_tracks", inputProfile.MapUntaggedSubtitleTracks)
+		repo.DB.Model(&profile).Select("*").Updates(inputProfile)
 		if err := repo.DB.Save(&profile).Error; err != nil {
 			log.Printf("Error updating profile: %v", err)
 			return models.Profile{}, err
@@ -86,8 +82,7 @@ func (repo *ProfileRepository) UpsertProfile(profileId int, inputProfile models.
 	}
 
 	// Replace with new audio languages
-	if err := repo.DB.Model(&profile).Association("ProfileAudioLanguages").Replace(inputProfile.ProfileAudioLanguages).Error; err != nil {
-		log.Printf("Error updating ProfileAudioLanguages: %v", err)
+	if err := repo.DB.Model(&profile).Association("ProfileAudioLanguages").Replace(inputProfile.ProfileAudioLanguages); err != nil {
 		return models.Profile{}, err
 	}
 
@@ -116,7 +111,7 @@ func (repo *ProfileRepository) UpsertProfile(profileId int, inputProfile models.
 	}
 
 	// Replace with new subtitle languages
-	if err := repo.DB.Model(&profile).Association("ProfileSubtitleLanguages").Replace(inputProfile.ProfileSubtitleLanguages).Error; err != nil {
+	if err := repo.DB.Model(&profile).Association("ProfileSubtitleLanguages").Replace(inputProfile.ProfileSubtitleLanguages); err != nil {
 		log.Printf("Error updating ProfileSubtitleLanguages: %v", err)
 		return models.Profile{}, err
 	}
@@ -146,7 +141,7 @@ func (repo *ProfileRepository) UpsertProfile(profileId int, inputProfile models.
 	}
 
 	// Replace with new codecs
-	if err := repo.DB.Model(&profile).Association("ProfileCodecs").Replace(inputProfile.ProfileCodecs).Error; err != nil {
+	if err := repo.DB.Model(&profile).Association("ProfileCodecs").Replace(inputProfile.ProfileCodecs); err != nil {
 		log.Printf("Error updating ProfileCodecs: %v", err)
 		return models.Profile{}, err
 	}

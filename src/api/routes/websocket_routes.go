@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"sync"
 	"time"
 
 	"transfigurr/interfaces"
@@ -28,9 +29,12 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request, encodeService inte
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		http.Error(w, "Could not open websocket connection", http.StatusBadRequest)
+		log.Printf("WebSocket upgrade error: %v", err)
 		return
 	}
 	defer conn.Close()
+
+	log.Println("WebSocket connection established")
 
 	// Set up ping/pong handlers
 	conn.SetPingHandler(func(appData string) error {
@@ -43,18 +47,15 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request, encodeService inte
 		return nil
 	})
 
-	// Create a ticker that triggers every second
-	ticker := time.NewTicker(1 * time.Second)
-	defer ticker.Stop()
+	// Create a channel to signal when to stop the goroutines
+	stopChan := make(chan struct{})
+	defer close(stopChan)
 
-	go func() {
-		for {
-			select {
-			case <-ticker.C:
-				sendData(seriesRepo, movieRepo, profileRepo, settingRepo, systemRepo, historyRepo, eventRepo, codecRepo, encodeService, conn)
-			}
-		}
-	}()
+	// Create a mutex for synchronized writes
+	var writeMutex sync.Mutex
+
+	// Start goroutines to fetch and send data concurrently
+	go startDataFetchers(conn, seriesRepo, movieRepo, profileRepo, settingRepo, systemRepo, historyRepo, eventRepo, codecRepo, encodeService, stopChan, &writeMutex)
 
 	// Read messages to keep the connection alive
 	for {
@@ -64,76 +65,63 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request, encodeService inte
 			break
 		}
 	}
+	log.Println("WebSocket connection closed")
 }
 
-func sendData(seriesRepo interfaces.SeriesRepositoryInterface, movieRepo interfaces.MovieRepositoryInterface, profileRepo interfaces.ProfileRepositoryInterface, settingRepo interfaces.SettingRepositoryInterface, systemRepo interfaces.SystemRepositoryInterface, historyRepo interfaces.HistoryRepositoryInterface, eventRepo interfaces.EventRepositoryInterface, codecRepo interfaces.CodecRepositoryInterface, encodeService interfaces.EncodeServiceInterface, conn *websocket.Conn) {
-	series, err := seriesRepo.GetSeries()
-	if err != nil {
-		log.Println("Error fetching series:", err)
+func startDataFetchers(conn *websocket.Conn, seriesRepo interfaces.SeriesRepositoryInterface, movieRepo interfaces.MovieRepositoryInterface, profileRepo interfaces.ProfileRepositoryInterface, settingRepo interfaces.SettingRepositoryInterface, systemRepo interfaces.SystemRepositoryInterface, historyRepo interfaces.HistoryRepositoryInterface, eventRepo interfaces.EventRepositoryInterface, codecRepo interfaces.CodecRepositoryInterface, encodeService interfaces.EncodeServiceInterface, stopChan chan struct{}, writeMutex *sync.Mutex) {
+	type fetcher struct {
+		dataType string
+		getter   func() (interface{}, error)
 	}
 
-	settings, err := settingRepo.GetAllSettings()
-	if err != nil {
-		log.Println("Error fetching settings:", err)
+	fetchers := []fetcher{
+		{"settings", func() (interface{}, error) { return settingRepo.GetAllSettings() }},
+		{"system", func() (interface{}, error) { return systemRepo.GetSystems() }},
+		{"profiles", func() (interface{}, error) { return profileRepo.GetAllProfiles() }},
+		{"containers", func() (interface{}, error) { return codecRepo.GetContainers(), nil }},
+		{"codecs", func() (interface{}, error) { return codecRepo.GetCodecs(), nil }},
+		{"encoders", func() (interface{}, error) { return codecRepo.GetEncoders(), nil }},
+		{"queue", func() (interface{}, error) { return encodeService.GetQueue(), nil }},
+		{"series", func() (interface{}, error) { return seriesRepo.GetSeries() }},
+		{"movies", func() (interface{}, error) { return movieRepo.GetMovies() }},
+		{"history", func() (interface{}, error) { return historyRepo.GetHistories() }},
+		{"logs", func() (interface{}, error) { return eventRepo.GetEvents() }},
 	}
 
-	movies, err := movieRepo.GetMovies()
-	if err != nil {
-		log.Println("Error fetching movies:", err)
-	}
+	for _, f := range fetchers {
+		go func(f fetcher) {
+			ticker := time.NewTicker(250 * time.Millisecond)
+			defer ticker.Stop()
 
-	profiles, err := profileRepo.GetAllProfiles()
-	if err != nil {
-		log.Println("Error fetching profiles:", err)
-	}
+			for {
+				select {
+				case <-ticker.C:
+					data, err := f.getter()
+					if err != nil {
+						log.Printf("Error fetching %s: %v", f.dataType, err)
+						continue
+					}
 
-	system, err := systemRepo.GetSystems()
-	if err != nil {
-		log.Println("Error fetching system:", err)
-	}
+					message := map[string]interface{}{
+						f.dataType: data,
+					}
+					jsonData, err := json.Marshal(message)
+					if err != nil {
+						log.Printf("Error marshaling %s data: %v", f.dataType, err)
+						continue
+					}
 
-	history, err := historyRepo.GetHistories()
-	if err != nil {
-		log.Println("Error fetching history:", err)
-	}
-
-	containers := codecRepo.GetContainers()
-	if err != nil {
-		log.Println("Error fetching containers:", err)
-	}
-
-	codecs := codecRepo.GetCodecs()
-
-	encoders := codecRepo.GetEncoders()
-
-	logs, err := eventRepo.GetEvents()
-	if err != nil {
-		log.Println("Error fetching logs:", err)
-	}
-
-	data := map[string]interface{}{
-		"series":     series,
-		"movies":     movies,
-		"profiles":   profiles,
-		"settings":   settings,
-		"system":     system,
-		"history":    history,
-		"containers": containers,
-		"codecs":     codecs,
-		"encoders":   encoders,
-		"logs":       logs,
-		"queue":      encodeService.GetQueue(),
-	}
-
-	// Send the fetched data over the WebSocket connection
-	jsonData, err := json.Marshal(data)
-	if err != nil {
-		log.Println("Error marshaling data:", err)
-		return
-	}
-
-	if err := conn.WriteMessage(websocket.TextMessage, jsonData); err != nil {
-		log.Println("Error writing message:", err)
-		return
+					writeMutex.Lock()
+					if err := conn.WriteMessage(websocket.TextMessage, jsonData); err != nil {
+						log.Printf("Error writing %s message: %v", f.dataType, err)
+						writeMutex.Unlock()
+						return
+					}
+					writeMutex.Unlock()
+				case <-stopChan:
+					return
+				}
+			}
+		}(f)
 	}
 }

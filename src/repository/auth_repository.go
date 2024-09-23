@@ -1,9 +1,10 @@
 package repository
 
 import (
+	"errors"
 	"transfigurr/models"
 
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 type AuthRepository struct {
@@ -18,13 +19,17 @@ func NewAuthRepository(db *gorm.DB) *AuthRepository {
 
 func (repo *AuthRepository) GetUser() (models.User, error) {
 	var user models.User
+
 	if err := repo.DB.First(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return models.User{}, nil // or handle the not found case as needed
+		}
 		return models.User{}, err
 	}
 	return user, nil
 }
 
-func (repo *AuthRepository) CreateUser(user models.User) error {
+func (repo *AuthRepository) CreateUser(user *models.User) error {
 	if err := repo.DB.Create(user).Error; err != nil {
 		return err
 	}

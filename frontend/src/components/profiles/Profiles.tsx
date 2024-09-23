@@ -4,6 +4,152 @@ import { useContext, useState } from "react";
 import ProfileModal from "../modals/profileModal/ProfileModal";
 import { WebSocketContext } from "../../contexts/webSocketContext";
 
+
+const defaultProfile =
+
+{
+	anamorphic
+		:
+		"off",
+	averageBitrate
+		:
+		15000,
+	chromaSmooth
+		:
+		"off",
+	chromaSmoothTune
+		:
+		"none",
+	codec
+		:
+		"Any",
+	codecs
+		:
+		[],
+	color
+		:
+		"black",
+	colorspace
+		:
+		"off",
+	constantQuality
+		:
+		22,
+	container
+		:
+		"matroska",
+	cropping
+		:
+		"off",
+	deblock
+		:
+		"off",
+	deblockTune
+		:
+		"medium",
+	deinterlace
+		:
+		"off",
+	deinterlacePreset
+		:
+		"default",
+	denoise
+		:
+		"off",
+	denoisePreset
+		:
+		"light",
+	denoiseTune
+		:
+		"none",
+	detelecine
+		:
+		"off",
+	encoder
+		:
+		"",
+	extension
+		:
+		"mkv",
+	fastDecode
+		:
+		false,
+	fill
+		:
+		"none",
+	flipping
+		:
+		false,
+	framerate
+		:
+		"same as source",
+	framerateType
+		:
+		"peak Framerate",
+	grayscale
+		:
+		false,
+	id
+		:
+		1,
+	interlaceDetection
+		:
+		"off",
+	level
+		:
+		"auto",
+	limit
+		:
+		"none",
+	mapUntaggedAudioTracks
+		:
+		true,
+	mapUntaggedSubtitleTracks
+		:
+		true,
+	multipassEncoding
+		:
+		false,
+	name
+		:
+		"Any",
+	passThruCommonMetadata
+		:
+		true,
+	preset
+		:
+		"medium",
+	profile
+		:
+		"auto",
+	profileAudioLanguages
+		:
+		[],
+	profileSubtitleLanguages
+		:
+		[],
+	qualityType
+		:
+		"constant quality",
+	rotation
+		:
+		0,
+	sharpen
+		:
+		"off",
+	sharpenPreset
+		:
+		"medium",
+	sharpenTune
+		:
+		"",
+	tune
+		:
+		"none",
+}
+
+
+
 const Profiles = () => {
 	const wsContext = useContext(WebSocketContext);
 	const profiles = wsContext?.data?.profiles;
@@ -71,16 +217,15 @@ const Profiles = () => {
 							type={"add"}
 							key={"add"}
 							name={""}
-							codecs={profiles[0].codecs}
+							codecs={defaultProfile?.codecs}
 							profile={{
-								...profiles[0],
-								id: profiles.length + 1,
+								...defaultProfile,
+								id: profiles?.length + 1,
 								name: "",
 								codecs: [],
 								profileAudioLanguages: [],
 								profileSubtitleLanguages: []
 							}}
-
 							onClick={handleProfileClick}
 						/>
 					</div>

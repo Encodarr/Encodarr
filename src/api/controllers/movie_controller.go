@@ -8,7 +8,7 @@ import (
 	"transfigurr/models"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 type MovieController struct {
@@ -37,6 +37,7 @@ func (ctrl *MovieController) UpsertMovie(c *gin.Context) {
 	id := c.Param("movieId")
 
 	if err := c.ShouldBindJSON(&inputMovie); err != nil {
+		log.Printf("Error binding JSON: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}

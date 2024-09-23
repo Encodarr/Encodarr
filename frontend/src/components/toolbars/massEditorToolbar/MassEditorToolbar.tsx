@@ -5,8 +5,8 @@ import SortIcon from "../../svgs/sort.svg?react";
 import FilterIcon from "../../svgs/filter.svg?react";
 const MassEditorToolbar = ({ selected, setSelected, settings }: any) => {
   const setSetting = async (key: string, value: any) => {
-    if (key == "massEditorSort" && value == settings.massEditorSort.value) {
-      await fetch(`/api/settings`, {
+    if (key == "massEditorSort" && value == settings.massEditorSort) {
+      await fetch(`/api/settings/${key}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -15,13 +15,13 @@ const MassEditorToolbar = ({ selected, setSelected, settings }: any) => {
         body: JSON.stringify({
           id: "massEditorSortDirection",
           value:
-            settings?.massEditorSortDirection.value === "ascending"
+            settings?.massEditorSortDirection == "ascending"
               ? "descending"
               : "ascending",
         }),
       });
     }
-    await fetch(`/api/settings`, {
+    await fetch(`/api/settings/${key}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -37,7 +37,7 @@ const MassEditorToolbar = ({ selected, setSelected, settings }: any) => {
       index={4}
       key={4}
       settings={settings}
-      sortDirection={settings?.massEditorSortDirection.value}
+      sortDirection={settings?.massEditorSortDirection}
       sort={true}
       icon={<SortIcon className={styles.svg} />}
       selected={selected}

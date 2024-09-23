@@ -51,6 +51,23 @@ func NewMetadataService(eventService interfaces.EventServiceInterface, seriesRep
 	return service
 }
 
+func (s *MetadataService) EnqueueAll() {
+	series, err := s.seriesRepo.GetSeries()
+	if err != nil {
+		log.Print(err)
+	}
+	for _, series := range series {
+		s.Enqueue(models.Item{Type: "series", Id: series.Id})
+	}
+	movies, err := s.movieRepo.GetMovies()
+	if err != nil {
+		log.Print(err)
+	}
+	for _, m := range movies {
+		s.Enqueue(models.Item{Type: "movie", Id: m.Id})
+	}
+}
+
 func (s *MetadataService) Enqueue(item models.Item) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -92,12 +109,18 @@ func (s *MetadataService) processItem(item models.Item) {
 			log.Print(err)
 		}
 		log.Print("getting series meta")
-		series, episodes, err := utils.GetSeriesMetadata(series)
-		log.Print(episodes)
+		series, err = utils.GetSeriesMetadata(series)
 		if err != nil {
 			log.Print(err)
 		}
+		log.Print(series.LastAirDate, "last air date")
 		s.seriesRepo.UpsertSeries(series.Id, series)
+		for _, season := range series.Seasons {
+			for _, episode := range season.Episodes {
+				s.episodeRepo.UpsertEpisode(series.Id, season.SeasonNumber, episode.EpisodeNumber, episode)
+			}
+		}
+
 	}
 
 	s.mu.Lock()

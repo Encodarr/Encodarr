@@ -10,7 +10,7 @@ import (
 func MovieRoutes(rg *gin.RouterGroup, movieRepo interfaces.MovieRepositoryInterface) {
 	controller := controllers.NewMovieController(movieRepo)
 	rg.GET("/movies", controller.GetMovies)
-	rg.GET("/movie/:movieId", controller.GetMovieByID)
-	rg.PUT("/movie/:movieId", controller.UpsertMovie)
-	rg.DELETE("/movie/:movieId", controller.DeleteMovieByID)
+	rg.GET("/movies/:movieId", controller.GetMovieByID)
+	rg.PUT("/movies/:movieId", controller.UpsertMovie)
+	rg.DELETE("/movies/:movieId", controller.DeleteMovieByID)
 }

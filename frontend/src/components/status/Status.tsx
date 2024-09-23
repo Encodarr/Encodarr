@@ -7,12 +7,10 @@ const version = packageJson.version;
 const Status = () => {
 	const wsContext = useContext(WebSocketContext);
 	const systemArray: any = wsContext?.data?.system;
-	console.log(systemArray)
-	const systemDictionary: { [key: string]: any } = systemArray.reduce((acc, obj) => {
+	const systemDictionary: { [key: string]: any } = systemArray?.reduce((acc, obj) => {
 		acc[obj.id] = obj.value;
 		return acc;
 	  }, {});
-	  console.log(systemDictionary)
 
 	const [delta, setDelta] = useState("");
 

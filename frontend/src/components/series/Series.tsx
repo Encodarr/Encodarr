@@ -59,7 +59,7 @@ const Series = ({ seriesName }: any) => {
         if ("caches" in window) {
           cache = await caches.open("image-cache");
           cachedResponse = await cache.match(
-            `/api/${path}/series/${series?.id}`
+            `/api/series/${series?.id}/${path}`
           );
         }
 
@@ -67,7 +67,7 @@ const Series = ({ seriesName }: any) => {
           const blob = await cachedResponse.blob();
           setSrc(URL.createObjectURL(blob));
         } else {
-          const response = await fetch(`/api/${path}/series/${series?.id}`, {
+          const response = await fetch(`/api/series/${series?.id}/${path}`, {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,
             },
@@ -80,7 +80,7 @@ const Series = ({ seriesName }: any) => {
           const blob = await response.blob();
           setSrc(URL.createObjectURL(blob));
           if (cache) {
-            cache.put(`/api/${path}/series/${series?.id}`, clonedResponse);
+            cache.put(`/api/series/${series?.id}/${path}`, clonedResponse);
           }
         }
       } catch (e) {
@@ -94,6 +94,8 @@ const Series = ({ seriesName }: any) => {
       loaded.current = true;
     }
   }, [series?.id]);
+
+  const profileName = profiles?.find((profile: any) => profile.id === series?.profileId)?.name || "";
   return (
     <div className={styles.series}>
       <SeriesToolbar
@@ -166,9 +168,7 @@ const Series = ({ seriesName }: any) => {
                   <div className={styles.icon}>
                     <Profile className={styles.svg} />
                   </div>
-                  {profiles && series?.profileId in profiles
-                    ? profiles[series?.profileId]?.name
-                    : ""}
+                  {profileName}
                 </div>
                 <div className={styles.tag}>
                   <div className={styles.icon}>

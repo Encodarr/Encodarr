@@ -10,7 +10,6 @@ const Season = ({ season, monitored }: any) => {
 	const onSeasonClick = () => {
 		setIsOpen(!isOpen);
 	};
-	console.log(season)
 	const backgroundColor = () => {
 		if (season?.missingEpisodes != 0) {
 			return "var(--dangerColor)";

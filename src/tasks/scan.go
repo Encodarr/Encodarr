@@ -49,43 +49,73 @@ func parseEpisodeAndSeasonNumber(file string, folder string) (int, int) {
 func ScanMovie(movieID string, movieRepo interfaces.MovieRepositoryInterface, settingRepo interfaces.SettingRepositoryInterface, profileRepo interfaces.ProfileRepositoryInterface) {
 	defer func() {
 		if r := recover(); r != nil {
-			log.Printf("An error occurred scanning series %s: %v", movieID, r)
+			log.Printf("An error occurred scanning movie %s: %v", movieID, r)
 		}
 	}()
 
-	movie, err := movieRepo.GetMovieById(movieID)
-	if err != nil {
-		log.Printf("Error getting movie: %v\n", err)
-	}
-	if movie.Id == "" {
-		movie.Id = movieID
-	}
-	moviesPath := filepath.Join(constants.MoviesPath, movieID)
+	log.Printf("Starting scan for movie ID: %s", movieID)
 
-	if _, err := os.Stat(moviesPath); os.IsNotExist(err) {
+	if movieID == "" {
+		log.Printf("Movie ID is empty, aborting scan.")
 		return
 	}
 
-	defaultProfile, settingsErr := settingRepo.GetSettingById("default_profile")
-	if settingsErr != nil {
-		log.Print(settingsErr)
+	moviesPath := filepath.Join(constants.MoviesPath, movieID)
+	if _, err := os.Stat(moviesPath); os.IsNotExist(err) {
+		log.Printf("Movies path does not exist: %s", moviesPath)
+		return
 	}
+
+	movie, err := movieRepo.GetMovieById(movieID)
+	if err != nil {
+		log.Printf("Error getting movie: %v", err)
+	}
+
+	// Initialize a new movie if it doesn't exist
+	if movie.Id == "" {
+		log.Printf("Movie with ID %s does not exist, initializing a new movie.", movieID)
+		movie = models.Movie{
+			Id: movieID,
+		}
+	}
+
+	log.Printf("Fetched movie: %+v", movie)
+
+	defaultProfile, settingsErr := settingRepo.GetSettingById("defaultProfile")
+	if settingsErr != nil {
+		log.Printf("Error getting default profile setting: %v", settingsErr)
+		return
+	}
+	log.Printf("Default profile: %+v", defaultProfile)
+
 	if movie.ProfileID == 0 {
-		profileID, _ := strconv.Atoi(defaultProfile.Value)
+		profileID, err := strconv.Atoi(defaultProfile.Value)
+		if err != nil {
+			log.Printf("Error converting default profile value to int: %v", err)
+			return
+		}
 		movie.ProfileID = profileID
 	}
+	log.Printf("Movie Profile ID: %d", movie.ProfileID)
+
 	profile, profileErr := profileRepo.GetProfileById(movie.ProfileID)
 	if profileErr != nil {
-		log.Print(profileErr, profile)
+		log.Printf("Error getting profile by ID: %v", profileErr)
+		return
 	}
+	log.Printf("Profile: %+v", profile)
+
+	fileFound := false
 	err = filepath.Walk(moviesPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
+			log.Printf("Error walking the path %s: %v", path, err)
 			return err
 		}
 		if info.IsDir() {
 			return nil
 		}
 
+		fileFound = true
 		movie.Filename = info.Name()
 		movie.Path = path
 		movie.Size = int(info.Size())
@@ -96,6 +126,7 @@ func ScanMovie(movieID string, movieRepo interfaces.MovieRepositoryInterface, se
 
 		vcodec, err := utils.AnalyzeMediaFile(path)
 		if err != nil {
+			log.Printf("Error analyzing media file %s: %v", path, err)
 			return nil
 		}
 		movie.VideoCodec = vcodec
@@ -105,12 +136,26 @@ func ScanMovie(movieID string, movieRepo interfaces.MovieRepositoryInterface, se
 		return nil
 	})
 
+	if !fileFound {
+		movie.Filename = ""
+		movie.Path = ""
+		movie.Size = 0
+		movie.VideoCodec = ""
+		movie.OriginalSize = 0
+		movie.VideoCodec = ""
+	}
+
 	if err != nil {
-		log.Printf("Error walking the path %v: %v\n", moviesPath, err)
+		log.Printf("Error walking the path %s: %v", moviesPath, err)
 		return
 	}
 
-	movieRepo.UpsertMovie(movie.Id, movie)
+	log.Printf("Movie after scanning: %+v", movie)
+	_, err = movieRepo.UpsertMovie(movie.Id, movie)
+	if err != nil {
+		log.Printf("Error upserting movie: %v", err)
+	}
+	log.Printf("Finished scan for movie ID: %s", movieID)
 }
 
 func ScanSeries(encodeService interfaces.EncodeServiceInterface, seriesID string, seriesRepo interfaces.SeriesRepositoryInterface, seasonRepo interfaces.SeasonRepositoryInterface, episodeRepo interfaces.EpisodeRepositoryInterface, settingRepo interfaces.SettingRepositoryInterface, profileRepo interfaces.ProfileRepositoryInterface) {
@@ -124,6 +169,7 @@ func ScanSeries(encodeService interfaces.EncodeServiceInterface, seriesID string
 	if err != nil {
 		log.Printf("Error getting series: %v\n", err)
 	}
+	series.MissingEpisodes = 0
 	if series.Id == "" {
 		series.Id = seriesID
 	}
@@ -133,7 +179,7 @@ func ScanSeries(encodeService interfaces.EncodeServiceInterface, seriesID string
 		return
 	}
 
-	defaultProfile, settingsErr := settingRepo.GetSettingById("default_profile")
+	defaultProfile, settingsErr := settingRepo.GetSettingById("defaultProfile")
 	if settingsErr != nil {
 		log.Print(settingsErr)
 	}
@@ -178,15 +224,7 @@ func ScanSeries(encodeService interfaces.EncodeServiceInterface, seriesID string
 			return nil
 		}
 		episode.VideoCodec = vcodec
-		if episode.VideoCodec != profile.Codec && profile.Codec != "Any" {
-			episode.Missing = true
-			series.MissingEpisodes += 1
-		}
-		if episode.Missing && series.Monitored {
-			encodeService.Enqueue(models.Item{Type: "episode", Id: episode.Id})
-		}
 
-		episodeRepo.UpsertEpisode(seriesID, seasonNumber, episodeNumber, *episode)
 		if _, ok := seasons[seasonID]; !ok {
 			seasons[seasonID] = &models.Season{
 				SeasonNumber: seasonNumber,
@@ -200,6 +238,20 @@ func ScanSeries(encodeService interfaces.EncodeServiceInterface, seriesID string
 			seasons[seasonID].SpaceSaved += episode.Size
 		}
 
+		if episode.VideoCodec != profile.Codec && profile.Codec != "Any" {
+			episode.Missing = true
+			series.MissingEpisodes += 1
+			if _, ok := seasons[seasonID]; ok {
+				seasons[seasonID].MissingEpisodes += 1
+				log.Print(episode.Id)
+			}
+		}
+		if episode.Missing && series.Monitored {
+			encodeService.Enqueue(models.Item{Type: "episode", Id: episode.Id})
+		}
+
+		episodeRepo.UpsertEpisode(seriesID, seasonNumber, episodeNumber, *episode)
+
 		return nil
 	})
 
@@ -207,13 +259,20 @@ func ScanSeries(encodeService interfaces.EncodeServiceInterface, seriesID string
 		log.Printf("Error walking the path %v: %v\n", seriesPath, err)
 	}
 
-	for _, data := range seasons {
-		seasonRepo.UpsertSeason(seriesID, data.SeasonNumber, *data)
-		series.SeasonsCount += 1
-		series.EpisodeCount += data.EpisodeCount
-		series.Size += data.Size
-		series.SpaceSaved += data.SpaceSaved
+	// Update series properties before saving
+	series.SeasonsCount = len(seasons)
+	series.EpisodeCount = 0
+	series.Size = 0
+	series.SpaceSaved = 0
+
+	for _, season := range seasons {
+		log.Print(season.MissingEpisodes, " Missing")
+		seasonRepo.UpsertSeason(seriesID, season.SeasonNumber, *season)
+		series.EpisodeCount += season.EpisodeCount
+		series.Size += season.Size
+		series.SpaceSaved += season.SpaceSaved
 	}
+
 	seriesRepo.UpsertSeries(series.Id, series)
 }
 

@@ -44,7 +44,7 @@ const MediaToolbar = ({
 
   const setSetting = async (key: string, value: any) => {
     if (key == "mediaSort" && value == settings.mediaSort) {
-      await fetch(`/api/settings`, {
+      await fetch(`/api/settings/${key}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -53,13 +53,13 @@ const MediaToolbar = ({
         body: JSON.stringify({
           id: "mediaSortDirection",
           value:
-            settings?.mediaSortDirection.value === "ascending"
+            settings?.mediaSortDirection === "ascending"
               ? "descending"
               : "ascending",
         }),
       });
     }
-    await fetch(`/api/settings`, {
+    await fetch(`/api/settings/${key}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -170,42 +170,42 @@ const MediaToolbar = ({
           text: "Monitored/Status",
           id: "monitored/status",
           key: "monitored/status",
-          settindId: "mediaSort",
+          settingId: "mediaSort",
           onClick: () => setSetting("mediaSort", "monitored/status"),
         },
         {
           text: "Title",
           id: "title",
           key: "title",
-          settindId: "mediaSort",
+          settingId: "mediaSort",
           onClick: () => setSetting("mediaSort", "title"),
         },
         {
           text: "Network",
           id: "network",
           key: "network",
-          settindId: "mediaSort",
+          settingId: "mediaSort",
           onClick: () => setSetting("mediaSort", "network"),
         },
         {
           text: "Profile",
           id: "profile",
           key: "profile",
-          settindId: "mediaSort",
+          settingId: "mediaSort",
           onClick: () => setSetting("mediaSort", "profile"),
         },
         {
           text: "Episode Count",
           id: "episodes",
           key: "episodes",
-          settindId: "mediaSort",
+          settingId: "mediaSort",
           onClick: () => setSetting("mediaSort", "episodes"),
         },
         {
           text: "Size On Disk",
           id: "size",
           key: "size",
-          settindId: "mediaSort",
+          settingId: "mediaSort",
           onClick: () => setSetting("mediaSort", "size"),
         },
       ]}
@@ -223,42 +223,42 @@ const MediaToolbar = ({
           text: "All",
           id: "all",
           key: "all",
-          settindId: "mediaFilter",
+          settingId: "mediaFilter",
           onClick: () => setSetting("mediaFilter", "all"),
         },
         {
           text: "Monitored Only",
           id: "monitored",
           key: "monitored",
-          settindId: "mediaFilter",
+          settingId: "mediaFilter",
           onClick: () => setSetting("mediaFilter", "monitored"),
         },
         {
           text: "Unmonitored Only",
           id: "unmonitored",
           key: "unmonitored",
-          settindId: "mediaFilter",
+          settingId: "mediaFilter",
           onClick: () => setSetting("mediaFilter", "unmonitored"),
         },
         {
           text: "Continuing Only",
           id: "continuing",
           key: "continuing",
-          settindId: "mediaFilter",
+          settingId: "mediaFilter",
           onClick: () => setSetting("mediaFilter", "continuing"),
         },
         {
           text: "Ended Only",
           id: "ended",
           key: "ended",
-          settindId: "mediaFilter",
+          settingId: "mediaFilter",
           onClick: () => setSetting("mediaFilter", "ended"),
         },
         {
           text: "Missing Episodes",
           id: "missing",
           key: "missing",
-          settindId: "mediaFilter",
+          settingId: "mediaFilter",
           onClick: () => setSetting("mediaFilter", "missing"),
         },
       ]}

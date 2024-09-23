@@ -1,10 +1,11 @@
 package repository
 
 import (
+	"errors"
 	"strconv"
 	"transfigurr/models"
 
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 type SeasonRepository struct {
@@ -31,7 +32,7 @@ func (repo *SeasonRepository) UpsertSeason(seriesId string, seasonNumber int, in
 	inputSeason.SeriesId = seriesId
 	result := repo.DB.Where("series_id = ? AND season_number = ?", seriesId, seasonNumber).First(&season)
 
-	if result.RecordNotFound() {
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		season = inputSeason
 		if err := repo.DB.Create(&season).Error; err != nil {
 			return models.Season{}, err

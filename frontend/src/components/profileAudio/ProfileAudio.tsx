@@ -2,7 +2,6 @@ import InputCheckbox from "../inputs/inputCheckbox/InputCheckbox";
 import InputContainer from "../inputs/inputContainer/InputContainer";
 import styles from "./ProfileAudio.module.scss";
 const ProfileAudio = ({ content, setContent }) => {
-	console.log(content)
 	const languages = {
 		all: "All",
 		eng: "English",

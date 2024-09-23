@@ -10,8 +10,9 @@ const SeriesModal = ({
   setContent,
   profiles,
 }: any) => {
+  
   const onSave = async () => {
-    await fetch(`/api/series/${content.name}`, {
+    await fetch(`/api/series/${content.id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -51,9 +52,9 @@ const SeriesModal = ({
         <div className={styles.inputContainer}>
           <label className={styles.label}>Profile </label>
           <InputSelect
-            selected={content.profile_id.value}
+            selected={content.profileId}
             onChange={(e: any) => {
-              setContent({ ...content.profile_id, value: e.target.value });
+              setContent({ ...content, profileId: parseInt(e.target.value) });
             }}
           >
             {Object.values(profiles)?.map((profile: any, index: number) => (

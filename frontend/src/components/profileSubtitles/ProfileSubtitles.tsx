@@ -15,7 +15,6 @@ const ProfileSubtitles = ({ content, setContent }) => {
         rus: "Russian",
         zho: "Chinese",
     };
-	console.log(content)
     return (
         <>
             <div className={styles.section}>

@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"bytes"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"transfigurr/interfaces"
@@ -34,7 +36,20 @@ func (ctrl *SeriesController) UpsertSeries(c *gin.Context) {
 	var inputSeries models.Series
 	id := c.Param("seriesId")
 
+	// Log the incoming request body for debugging
+	body, err := ioutil.ReadAll(c.Request.Body)
+	if err != nil {
+		log.Print("Error reading request body: ", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error reading request body"})
+		return
+	}
+	log.Printf("Request body: %s", body)
+
+	// Reset the request body so it can be read again by ShouldBindJSON
+	c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+
 	if err := c.ShouldBindJSON(&inputSeries); err != nil {
+		log.Print("Error binding JSON: ", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}

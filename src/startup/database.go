@@ -4,7 +4,7 @@ import (
 	"transfigurr/models"
 	"transfigurr/seeds"
 
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 func InitDB(db *gorm.DB) {

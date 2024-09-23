@@ -9,7 +9,6 @@ const sortAndFilter = (
 	let filteredMedia: any[] = Object.values(series || {}).concat(
 		Object.values(movies || {})
 	);
-
 	if (filter == "monitored") {
 		filteredMedia = filteredMedia.filter((series: any) => series.monitored);
 	} else if (filter == "unmonitored") {

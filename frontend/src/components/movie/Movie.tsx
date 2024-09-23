@@ -13,14 +13,19 @@ import FolderIcon from "../svgs/folder.svg?react";
 import MovieToolbar from "../toolbars/movieToolbar/MovieToolbar";
 import MovieModal from "../modals/movieModal/MovieModal";
 
-const Movie = ({ movie_name }: any) => {
+const Movie = ({ movieName }: any) => {
 	const wsContext = useContext(WebSocketContext);
 	const profiles = wsContext?.data?.profiles;
-	const movie: any =
-		wsContext?.data?.movies && profiles
-			? wsContext?.data?.movies[movie_name]
-			: {};
-	const system = wsContext?.data?.system;
+	const movie: any = 
+	wsContext?.data?.movies && profiles
+	  ? wsContext?.data?.movies.find((s: any) => s.id === movieName)
+	  : {};
+	  const system: any = wsContext?.data?.system
+	  ? Object.keys(wsContext?.data?.system).reduce((acc, key) => {
+		acc[key] = wsContext?.data?.system[key].value;
+		return acc;
+	  }, {})
+	  : {};
 	const [content, setContent] = useState<any>({});
 	const handleEditClick = () => {
 		setIsModalOpen(true);
@@ -30,8 +35,8 @@ const Movie = ({ movie_name }: any) => {
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const status = movie?.status;
 	const genre = movie?.genre;
-	const firstAirDate = movie?.release_date?.split("-")[0].trim();
-	const lastAirDate = movie?.last_air_date?.split("-")[0].trim();
+	const firstAirDate = movie?.releaseDate?.split("-")[0].trim();
+	const lastAirDate = movie?.lastAirDate?.split("-")[0].trim();
 	const overview = movie?.overview;
 	const runYears =
 		status === "Ended" ? firstAirDate + "-" + lastAirDate : firstAirDate;
@@ -53,7 +58,7 @@ const Movie = ({ movie_name }: any) => {
 				if ("caches" in window) {
 					cache = await caches.open("image-cache");
 					cachedResponse = await cache.match(
-						`/api/${path}/movies/${movie?.id}`
+						`/api/movies/${movie?.id}/${path}`
 					);
 				}
 
@@ -61,7 +66,7 @@ const Movie = ({ movie_name }: any) => {
 					const blob = await cachedResponse.blob();
 					setSrc(URL.createObjectURL(blob));
 				} else {
-					const response = await fetch(`/api/${path}/movies/${movie?.id}`, {
+					const response = await fetch(`/api/movies/${movie?.id}/${path}`, {
 						headers: {
 							Authorization: `Bearer ${localStorage.getItem("token")}`,
 						},
@@ -74,7 +79,7 @@ const Movie = ({ movie_name }: any) => {
 					const blob = await response.blob();
 					setSrc(URL.createObjectURL(blob));
 					if (cache) {
-						cache.put(`/api/${path}/movie/${movie?.id}`, clonedResponse);
+						cache.put(`/api/movies/${movie?.id}/${path}`, clonedResponse);
 					}
 				}
 			} catch (e) {
@@ -88,6 +93,8 @@ const Movie = ({ movie_name }: any) => {
 			loaded.current = true;
 		}
 	}, [movie?.id]);
+	const profileName = profiles?.find((profile: any) => profile.id === movie?.profileId)?.name || "";
+
 	return (
 		<div className={styles.movie}>
 			<MovieToolbar
@@ -95,7 +102,7 @@ const Movie = ({ movie_name }: any) => {
 				selected={selected}
 				setSelected={setSelected}
 				handleEditClick={handleEditClick}
-				movie_name={movie_name}
+				movieName={movieName}
 			/>
 			<MovieModal
 				isOpen={isModalOpen}
@@ -159,9 +166,7 @@ const Movie = ({ movie_name }: any) => {
 									<div className={styles.icon}>
 										<Profile className={styles.svg} />
 									</div>
-									{profiles && movie?.profile_id in profiles
-										? profiles[movie?.profile_id]?.name
-										: ""}
+									{profileName}
 								</div>
 								<div className={styles.tag}>
 									<div className={styles.icon}>
@@ -214,7 +219,7 @@ const Movie = ({ movie_name }: any) => {
 						<tbody>
 							<tr>
 								<td>{movie?.filename}</td>
-								<td>{movie?.video_codec}</td>
+								<td>{movie?.videoCodec}</td>
 								<td>{formatSize(movie?.size)}</td>
 							</tr>
 						</tbody>

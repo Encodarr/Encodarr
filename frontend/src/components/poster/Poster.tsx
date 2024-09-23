@@ -2,8 +2,6 @@ import styles from "./Poster.module.scss";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 const PosterComponent = ({ media, posterWidth, posterHeight, profiles, settings }: any) => {
-  console.log(media, 'hi')
-  console.log(settings, 'set')
   const type = media?.episodeCount != undefined ? "series" : "movies";
   const progress = () => {
     if (media?.episodeCount == undefined) {
@@ -38,7 +36,7 @@ const PosterComponent = ({ media, posterWidth, posterHeight, profiles, settings 
         if ("caches" in window) {
           cache = await caches.open("image-cache");
           cachedResponse = await cache.match(
-            `/api/poster/${type}/${media?.id}`
+            `/api/${type}/${media?.id}/poster`
           );
         }
 
@@ -46,7 +44,7 @@ const PosterComponent = ({ media, posterWidth, posterHeight, profiles, settings 
           const blob = await cachedResponse.blob();
           setImgSrc(URL.createObjectURL(blob));
         } else {
-          const response = await fetch(`/api/poster/${type}/${media?.id}`, {
+          const response = await fetch(`/api/${type}/${media?.id}/poster`, {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,
             },
@@ -61,7 +59,7 @@ const PosterComponent = ({ media, posterWidth, posterHeight, profiles, settings 
           const blob = await response.blob();
           setImgSrc(URL.createObjectURL(blob));
           if (cache) {
-            cache.put(`/api/poster/${type}/${media?.id}`, clonedResponse);
+            cache.put(`/api/${type}/${media?.id}/poster`, clonedResponse);
           }
         }
       } catch (e) {
@@ -93,12 +91,12 @@ const PosterComponent = ({ media, posterWidth, posterHeight, profiles, settings 
                     backgroundColor: backgroundColor(),
                     width: progress(),
                     height:
-                      settings.mediaPosterDetailedProgressBar
+                      settings.mediaPosterDetailedProgressBar == "true"
                         ? "15px"
                         : "5px",
                   }}
                 />
-                {settings?.mediaPosterDetailedProgressBar && (
+                {settings?.mediaPosterDetailedProgressBar == "true" && (
                   <div className={styles.detailText}>
                     {media?.episodeCount == undefined ? (
                       <>{media?.missing ? "0/1" : "1/1"}</>
@@ -111,21 +109,19 @@ const PosterComponent = ({ media, posterWidth, posterHeight, profiles, settings 
                   </div>
                 )}
               </div>
-              {settings?.mediaPosterShowTitle && (
+              {settings?.mediaPosterShowTitle == "true" && (
                 <div className={styles.name}>
                   {media?.name ? media?.name : media?.id}
                 </div>
               )}
-              {settings?.mediaPosterShowMonitored && (
+              {settings?.mediaPosterShowMonitored == "true" && (
                 <div className={styles.status}>
                   {media?.monitored ? "Monitored" : "Unmonitored"}
                 </div>
               )}
-              {settings?.mediaPosterShowProfile && (
+              {settings?.mediaPosterShowProfile == "true" && (
                 <div className={styles.profile}>
-                  {profiles && media?.profileId in profiles
-                    ? profiles[media?.profileId]?.name
-                    : ""}
+                  {profiles ? profiles.find((profile: any) => profile.id === media.profileId)?.name : ""}
                 </div>
               )}
             </div>

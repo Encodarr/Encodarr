@@ -3,7 +3,6 @@ import InputContainer from "../inputs/inputContainer/InputContainer";
 import InputCheckbox from "../inputs/inputCheckbox/InputCheckbox";
 
 const ProfileSummary = ({ content, setContent, containers, codecs }: any) => {
-	console.log(content)
 	return (
 		<div className={styles.section}>
 			<div className={styles.left}>

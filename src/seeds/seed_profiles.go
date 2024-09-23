@@ -3,13 +3,13 @@ package seeds
 import (
 	"transfigurr/models"
 
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 func SeedProfiles(db *gorm.DB) {
-	if !db.HasTable(&models.Seed{}) {
-		db.CreateTable(&models.Seed{})
-		db.Model(&models.Seed{}).AddUniqueIndex("idx_Name", "Name")
+	if !db.Migrator().HasTable(&models.Seed{}) {
+		db.Migrator().CreateTable(&models.Seed{})
+		db.Migrator().CreateIndex(&models.Seed{}, "idx_name")
 	}
 
 	var seed models.Seed
@@ -19,7 +19,6 @@ func SeedProfiles(db *gorm.DB) {
 	}
 	defaultProfiles := []models.Profile{
 		{
-			Id:                        1,
 			Name:                      "Any",
 			Container:                 "matroska",
 			Extension:                 "mkv",
@@ -63,7 +62,6 @@ func SeedProfiles(db *gorm.DB) {
 			MapUntaggedSubtitleTracks: true,
 		},
 		{
-			Id:                        2,
 			Name:                      "h264",
 			Container:                 "matroska",
 			Extension:                 "mkv",
@@ -107,7 +105,6 @@ func SeedProfiles(db *gorm.DB) {
 			MapUntaggedSubtitleTracks: true,
 		},
 		{
-			Id:                        3,
 			Name:                      "hevc",
 			Container:                 "matroska",
 			Extension:                 "mkv",
@@ -151,7 +148,6 @@ func SeedProfiles(db *gorm.DB) {
 			MapUntaggedSubtitleTracks: true,
 		},
 		{
-			Id:                        4,
 			Name:                      "mpeg4",
 			Container:                 "matroska",
 			Extension:                 "mkv",
@@ -195,7 +191,6 @@ func SeedProfiles(db *gorm.DB) {
 			MapUntaggedSubtitleTracks: true,
 		},
 		{
-			Id:                        5,
 			Name:                      "vp8",
 			Container:                 "matroska",
 			Extension:                 "mkv",
@@ -239,7 +234,6 @@ func SeedProfiles(db *gorm.DB) {
 			MapUntaggedSubtitleTracks: true,
 		},
 		{
-			Id:                        6,
 			Name:                      "vp9",
 			Container:                 "matroska",
 			Extension:                 "mkv",
@@ -283,7 +277,6 @@ func SeedProfiles(db *gorm.DB) {
 			MapUntaggedSubtitleTracks: true,
 		},
 		{
-			Id:                        7,
 			Name:                      "av1",
 			Container:                 "matroska",
 			Extension:                 "mkv",

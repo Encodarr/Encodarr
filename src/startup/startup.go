@@ -12,8 +12,8 @@ import (
 	"transfigurr/services"
 	"transfigurr/tasks"
 
-	"github.com/jinzhu/gorm"
-	_ "github.com/mattn/go-sqlite3"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 func getParentDir() string {
@@ -78,7 +78,7 @@ func writeUptimeToDB(systemRepo interfaces.SystemRepositoryInterface) error {
 	return nil
 }
 
-func Startup() (db *gorm.DB, scanService interfaces.ScanServiceInterface, encodeService interfaces.EncodeServiceInterface, seriesRepo interfaces.SeriesRepositoryInterface, seasonRepo interfaces.SeasonRepositoryInterface, episodeRepo interfaces.EpisodeRepositoryInterface, movieRepo interfaces.MovieRepositoryInterface, settingRepo interfaces.SettingRepositoryInterface, systemRepo interfaces.SystemRepositoryInterface, profileRepo interfaces.ProfileRepositoryInterface, authRepo interfaces.AuthRepositoryInterface, userRepo interfaces.UserRepositoryInterface, historyRepo interfaces.HistoryRepositoryInterface, eventRepo interfaces.EventRepositoryInterface, codecRepo interfaces.CodecRepositoryInterface) {
+func Startup() (db *gorm.DB, scanService interfaces.ScanServiceInterface, encodeService interfaces.EncodeServiceInterface, metadataService interfaces.MetadataServiceInterface, seriesRepo interfaces.SeriesRepositoryInterface, seasonRepo interfaces.SeasonRepositoryInterface, episodeRepo interfaces.EpisodeRepositoryInterface, movieRepo interfaces.MovieRepositoryInterface, settingRepo interfaces.SettingRepositoryInterface, systemRepo interfaces.SystemRepositoryInterface, profileRepo interfaces.ProfileRepositoryInterface, authRepo interfaces.AuthRepositoryInterface, userRepo interfaces.UserRepositoryInterface, historyRepo interfaces.HistoryRepositoryInterface, eventRepo interfaces.EventRepositoryInterface, codecRepo interfaces.CodecRepositoryInterface) {
 
 	// Ensure the database path exists
 	if err := ensureDbPathExists(constants.DbPath); err != nil {
@@ -90,7 +90,10 @@ func Startup() (db *gorm.DB, scanService interfaces.ScanServiceInterface, encode
 		log.Fatalf("Failed to ensure database path exists: %v", err)
 	}
 
-	db, err := gorm.Open(constants.DbDriverName, constants.DbPath)
+	db, err := gorm.Open(sqlite.Open(constants.DbPath), &gorm.Config{
+		DisableForeignKeyConstraintWhenMigrating: true,
+		SkipDefaultTransaction:                   true,
+	})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -115,7 +118,7 @@ func Startup() (db *gorm.DB, scanService interfaces.ScanServiceInterface, encode
 	eventService := services.NewEventService(eventRepo, 100)
 	eventService.Startup("debug")
 
-	metadataService := services.NewMetadataService(eventService, seriesRepo, seasonRepo, episodeRepo, movieRepo, settingRepo, systemRepo, profileRepo, authRepo, userRepo, historyRepo, eventRepo, codecRepo)
+	metadataService = services.NewMetadataService(eventService, seriesRepo, seasonRepo, episodeRepo, movieRepo, settingRepo, systemRepo, profileRepo, authRepo, userRepo, historyRepo, eventRepo, codecRepo)
 	metadataService.Startup()
 
 	encodeService = services.NewEncodeService(eventService, seriesRepo, seasonRepo, episodeRepo, movieRepo, settingRepo, systemRepo, profileRepo, authRepo, userRepo, historyRepo, eventRepo, codecRepo)
@@ -133,14 +136,14 @@ func Startup() (db *gorm.DB, scanService interfaces.ScanServiceInterface, encode
 	}
 
 	// Create an instance for movies
-	moviesWatchdogService := services.NewWatchdogService(100)
+	moviesWatchdogService := services.NewWatchdogService(scanService)
 	moviesWatchdogService.Startup(filepath.Join(currentDir, "movies"), "movies")
 	log.Print("movies")
 	// Create an instance for series
-	seriesWatchdogService := services.NewWatchdogService(100)
+	seriesWatchdogService := services.NewWatchdogService(scanService)
 	seriesWatchdogService.Startup(filepath.Join(currentDir, "series"), "series")
 
 	// scan system
 	tasks.ScanSystem(seriesRepo, systemRepo)
-	return db, scanService, encodeService, seriesRepo, seasonRepo, episodeRepo, movieRepo, settingRepo, systemRepo, profileRepo, authRepo, userRepo, historyRepo, eventRepo, codecRepo
+	return db, scanService, encodeService, metadataService, seriesRepo, seasonRepo, episodeRepo, movieRepo, settingRepo, systemRepo, profileRepo, authRepo, userRepo, historyRepo, eventRepo, codecRepo
 }

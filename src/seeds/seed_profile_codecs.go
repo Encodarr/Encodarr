@@ -3,13 +3,13 @@ package seeds
 import (
 	"transfigurr/models"
 
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 func SeedProfileCodecs(db *gorm.DB) {
-	if !db.HasTable(&models.Seed{}) {
-		db.CreateTable(&models.Seed{})
-		db.Model(&models.Seed{}).AddUniqueIndex("idx_name", "name")
+	if !db.Migrator().HasTable(&models.Seed{}) {
+		db.Migrator().CreateTable(&models.Seed{})
+		db.Migrator().CreateIndex(&models.Seed{}, "idx_name")
 	}
 
 	var seed models.Seed
@@ -18,6 +18,10 @@ func SeedProfileCodecs(db *gorm.DB) {
 		return
 	}
 	defaultProfileCodecs := []models.ProfileCodec{
+		{
+			ProfileId: 0,
+			CodecId:   "Any",
+		},
 		{
 			ProfileId: 1,
 			CodecId:   "Any",
@@ -40,10 +44,6 @@ func SeedProfileCodecs(db *gorm.DB) {
 		},
 		{
 			ProfileId: 6,
-			CodecId:   "Any",
-		},
-		{
-			ProfileId: 7,
 			CodecId:   "Any",
 		},
 	}

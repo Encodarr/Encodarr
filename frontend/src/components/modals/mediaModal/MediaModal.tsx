@@ -9,13 +9,13 @@ const MediaModal = ({ isOpen, setIsOpen, content, setContent, type }: any) => {
 
   const onSave = async () => {
     for (const key in content) {
-      fetch(`/api/settings`, {
+      fetch(`/api/settings/${key}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        body: JSON.stringify({ id: key, value: content[key] }),
+        body: JSON.stringify({ id: key, value: String(content[key]) }),
       });
     }
     setIsOpen(false);
@@ -41,11 +41,11 @@ const MediaModal = ({ isOpen, setIsOpen, content, setContent, type }: any) => {
               <InputContainer
                 label="Poster Size"
                 type="select"
-                selected={content.media_poster_posterSize.value}
+                selected={content.mediaPosterPosterSize}
                 onChange={(e: any) => {
                   setContent({
                     ...content,
-                    media_poster_posterSize: e.target.value,
+                    mediaPosterPosterSize: e.target.value,
                   });
                 }}
               >
@@ -56,50 +56,50 @@ const MediaModal = ({ isOpen, setIsOpen, content, setContent, type }: any) => {
               <InputContainer
                 label="Detailed Progress Bar"
                 type="checkbox"
-                checked={Boolean(
-                  Number(content?.media_poster_detailedProgressBar.value)
-                )}
+                checked={
+                  (content?.mediaPosterDetailedProgressBar == "true")
+                }
                 helpText="Show text on progress bar"
                 onChange={(e: any) =>
                   setContent({
                     ...content,
-                    media_poster_detailedProgressBar: e.target.checked,
+                    mediaPosterDetailedProgressBar: String(e.target.checked),
                   })
                 }
               />
               <InputContainer
                 label="Show Title"
                 type="checkbox"
-                checked={Boolean(content?.media_poster_showTitle.value)}
+                checked={content?.mediaPosterShowTitle == "true"}
                 helpText="Show series title under poster"
                 onChange={(e: any) =>
                   setContent({
                     ...content,
-                    media_poster_showTitle: e.target.checked,
+                    mediaPosterShowTitle: String(e.target.checked),
                   })
                 }
               />
               <InputContainer
                 label="Show Monitored"
                 type="checkbox"
-                checked={Boolean(content?.media_poster_showMonitored.value)}
+                checked={content?.mediaPosterShowMonitored == "true"}
                 helpText="Show monitored status under poster"
                 onChange={(e: any) =>
                   setContent({
                     ...content,
-                    media_poster_showMonitored: e.target.checked,
+                    mediaPosterShowMonitored: String(e.target.checked),
                   })
                 }
               />
               <InputContainer
                 label="Show Profile"
                 type="checkbox"
-                checked={Boolean(content?.media_poster_showProfile.value)}
+                checked={content?.mediaPosterShowProfile == "true"}
                 helpText="Show codec profile under poster"
                 onChange={(e: any) =>
                   setContent({
                     ...content,
-                    media_poster_showProfile: e.target.checked,
+                    mediaPosterShowProfile: String(e.target.checked),
                   })
                 }
               />
@@ -110,121 +110,121 @@ const MediaModal = ({ isOpen, setIsOpen, content, setContent, type }: any) => {
               <InputContainer
                 label="Show Type"
                 type="checkbox"
-                checked={Boolean(content?.media_table_showType.value)}
+                checked={content?.mediaTableShowType == "true"}
                 onChange={(e: any) =>
                   setContent({
                     ...content,
-                    media_table_showType: e.target.checked,
+                    mediaTableShowType: String(e.target.checked),
                   })
                 }
               />
               <InputContainer
                 label="Show Network"
                 type="checkbox"
-                checked={Boolean(content?.media_table_showNetwork.value)}
+                checked={content?.mediaTableShowNetwork == "true"}
                 onChange={(e: any) =>
                   setContent({
                     ...content,
-                    media_table_showNetwork: e.target.checked,
+                    mediaTableShowNetwork: String(e.target.checked),
                   })
                 }
               />
               <InputContainer
                 label="Show Year"
                 type="checkbox"
-                checked={Boolean(content?.media_table_showYear.value)}
+                checked={content?.mediaTableShowYear == "true"}
                 onChange={(e: any) =>
                   setContent({
                     ...content,
-                    media_table_showYear: e.target.checked,
+                    mediaTableShowYear: String(e.target.checked),
                   })
                 }
               />
               <InputContainer
                 label="Show Profile"
                 type="checkbox"
-                checked={Boolean(content?.media_table_showProfile.value)}
+                checked={content?.mediaTableShowProfile == "true"}
                 onChange={(e: any) =>
                   setContent({
                     ...content,
-                    media_table_showProfile: e.target.checked,
+                    mediaTableShowProfile: String(e.target.checked),
                   })
                 }
               />
               <InputContainer
                 label="Show Seasons"
                 type="checkbox"
-                checked={Boolean(content?.media_table_showSeasons.value)}
+                checked={content?.mediaTableShowSeasons == "true"}
                 onChange={(e: any) =>
                   setContent({
                     ...content,
-                    media_table_showSeasons: e.target.checked,
+                    mediaTableShowSeasons: String(e.target.checked),
                   })
                 }
               />
               <InputContainer
                 label="Show Episodes"
                 type="checkbox"
-                checked={Boolean(content?.media_table_showEpisodes.value)}
+                checked={content?.mediaTableShowEpisodes == "true"}
                 onChange={(e: any) =>
                   setContent({
                     ...content,
-                    media_table_showEpisodes: e.target.checked,
+                    mediaTableShowEpisodes: String(e.target.checked),
                   })
                 }
               />
               <InputContainer
                 label="Show Episode Count"
                 type="checkbox"
-                checked={Boolean(content?.media_table_showEpisodeCount.value)}
+                checked={content?.mediaTableShowEpisodeCount == "true"}
                 onChange={(e: any) =>
                   setContent({
                     ...content,
-                    media_table_showEpisodeCount: e.target.checked,
+                    mediaTableShowEpisodeCount: String(e.target.checked),
                   })
                 }
               />
               <InputContainer
                 label="Show Year"
                 type="checkbox"
-                checked={Boolean(content?.media_table_showYear.value)}
+                checked={content?.mediaTableShowYear == "true"}
                 onChange={(e: any) =>
                   setContent({
                     ...content,
-                    media_table_showYear: e.target.checked,
+                    mediaTableShowYear: String(e.target.checked),
                   })
                 }
               />
               <InputContainer
                 label="Show Size On Disk"
                 type="checkbox"
-                checked={Boolean(content?.media_table_showSizeOnDisk.value)}
+                checked={content?.mediaTableShowSizeOnDisk == "true"}
                 onChange={(e: any) =>
                   setContent({
                     ...content,
-                    media_table_showSizeOnDisk: e.target.checked,
+                    mediaTableShowSizeOnDisk: String(e.target.checked),
                   })
                 }
               />
               <InputContainer
                 label="Show Space Saved"
                 type="checkbox"
-                checked={Boolean(content?.media_table_showSizeSaved.value)}
+                checked={content?.mediaTableShowSizeSaved == "true"}
                 onChange={(e: any) =>
                   setContent({
                     ...content,
-                    media_table_showSizeSaved: e.target.checked,
+                    mediaTableShowSizeSaved: String(e.target.checked),
                   })
                 }
               />
               <InputContainer
                 label="Show Genre"
                 type="checkbox"
-                checked={Boolean(content?.media_table_showGenre.value)}
+                checked={content?.mediaTableShowGenre == "true"}
                 onChange={(e: any) =>
                   setContent({
                     ...content,
-                    media_table_showGenre: e.target.checked,
+                    mediaTableShowGenre: String(e.target.checked),
                   })
                 }
               />
@@ -235,11 +235,11 @@ const MediaModal = ({ isOpen, setIsOpen, content, setContent, type }: any) => {
               <InputContainer
                 label="Poster Size"
                 type="select"
-                selected={content?.media_overview_posterSize}
+                selected={content?.mediaOverviewPosterSize}
                 onChange={(e: any) =>
                   setContent({
                     ...content,
-                    media_overview_posterSize: e.target.value,
+                    mediaOverviewPosterSize: e.target.value,
                   })
                 }
               >
@@ -250,50 +250,50 @@ const MediaModal = ({ isOpen, setIsOpen, content, setContent, type }: any) => {
               <InputContainer
                 label="Detailed Progress Bar"
                 type="checkbox"
-                checked={Boolean(
-                  content?.media_overview_detailedProgressBar.value
-                )}
+                checked={
+                  content?.mediaOverviewDetailedProgressBar == "true"
+                }
                 helpText={"Show text on progress bar"}
                 onChange={(e: any) =>
                   setContent({
                     ...content,
-                    media_overview_detailedProgressBar: e.target.checked,
+                    mediaOverviewDetailedProgressBar: String(e.target.checked),
                   })
                 }
               />
               <InputContainer
                 label="Show Monitored"
                 type="checkbox"
-                checked={Boolean(content?.media_overview_showMonitored.value)}
+                checked={content?.mediaOverviewShowMonitored == "true"}
                 helpText={"Show monitored in tags"}
                 onChange={(e: any) =>
                   setContent({
                     ...content,
-                    media_overview_showMonitored: e.target.checked,
+                    mediaOverviewShowMonitored: String(e.target.checked),
                   })
                 }
               />
               <InputContainer
                 label="Show Network"
                 type="checkbox"
-                checked={Boolean(content?.media_overview_showNetwork.value)}
+                checked={content?.mediaOverviewShowNetwork == "true"}
                 helpText={"Show network in tags"}
                 onChange={(e: any) =>
                   setContent({
                     ...content,
-                    media_overview_showNetwork: e.target.checked,
+                    mediaOverviewShowNetwork: String(e.target.checked),
                   })
                 }
               />
               <InputContainer
                 label="Show Profile"
                 type="checkbox"
-                checked={Boolean(content?.media_overview_showProfile.value)}
+                checked={content?.mediaOverviewShowProfile == "true"}
                 helpText={"Show profile in tags"}
                 onChange={(e: any) =>
                   setContent({
                     ...content,
-                    media_overview_showProfile: e.target.checked,
+                    mediaOverviewShowProfile: String(e.target.checked),
                   })
                 }
               />
@@ -301,36 +301,36 @@ const MediaModal = ({ isOpen, setIsOpen, content, setContent, type }: any) => {
               <InputContainer
                 label="Show Season Count"
                 type="checkbox"
-                checked={Boolean(content?.media_overview_showSeasonCount.value)}
+                checked={content?.mediaOverviewShowSeasonCount == "true"}
                 helpText={"Show season count in tags"}
                 onChange={(e: any) =>
                   setContent({
                     ...content,
-                    media_overview_showSeasonCount: e.target.checked,
+                    mediaOverviewShowSeasonCount: String(e.target.checked),
                   })
                 }
               />
               <InputContainer
                 label="Show Path"
                 type="checkbox"
-                checked={Boolean(content?.media_overview_showPath.value)}
+                checked={content?.mediaOverviewShowPath == "true"}
                 helpText={"Show path in tags"}
                 onChange={(e: any) =>
                   setContent({
                     ...content,
-                    media_overview_showPath: e.target.checked,
+                    mediaOverviewShowPath: String(e.target.checked),
                   })
                 }
               />
               <InputContainer
                 label="Show Size On Disk"
                 type="checkbox"
-                checked={Boolean(content?.media_overview_showSizeOnDisk.value)}
+                checked={content?.mediaOverviewShowSizeOnDisk == "true"}
                 helpText={"Show size on disk in tags"}
                 onChange={(e: any) =>
                   setContent({
                     ...content,
-                    media_overview_showSizeOnDisk: e.target.checked,
+                    mediaOverviewShowSizeOnDisk: String(e.target.checked),
                   })
                 }
               />

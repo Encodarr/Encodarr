@@ -26,6 +26,9 @@ export const formatDate = (date: string) => {
 };
 
 export const formatSize = (size: number) => {
+	if (!size) {
+		return "N/A"
+	}
 	let sizeString = "";
 	const isNegative = size < 0;
 	size = Math.abs(size);

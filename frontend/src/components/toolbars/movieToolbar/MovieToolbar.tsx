@@ -10,10 +10,10 @@ const MovieToolbar = ({
 	selected,
 	setSelected,
 	handleEditClick,
-	movie_name,
+	movieName,
 }: any) => {
 	const handleScanClick = async () => {
-		await fetch(`/api/actions/scan/movies/${movie_name}`, {
+		await fetch(`/api/actions/scan/movies/${movieName}`, {
 			method: "POST",
 			headers: {
 				Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -22,7 +22,7 @@ const MovieToolbar = ({
 	};
 
 	const handleMetadataClick = async () => {
-		await fetch(`/api/actions/refresh/metadata/movies/${movie_name}`, {
+		await fetch(`/api/actions/refresh/metadata/movies/${movieName}`, {
 			method: "POST",
 			headers: {
 				Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -36,7 +36,7 @@ const MovieToolbar = ({
 			icon={
 				<SyncIcon
 					className={
-						system?.scan_running == "1" && system?.scan_target == movie_name
+						system?.scanRunning == "1" && system?.scanTarget == movieName
 							? styles.spinning
 							: styles.svg
 					}
@@ -50,8 +50,8 @@ const MovieToolbar = ({
 			text="Refresh Metadata"
 			key="metadata"
 			icon={
-				system?.metadata_running == "1" &&
-				system?.metadata_target == movie_name ? (
+				system?.metadataRunning == "1" &&
+				system?.metadataTarget == movieName ? (
 					<LoadingIcon className={styles.loading} />
 				) : (
 					<RssFeedIcon className={styles.svg} />
