@@ -32,7 +32,6 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     );
 
     ws.current.onopen = () => {
-      console.log("WebSocket connection opened");
       if (reconnectInterval.current) {
         clearInterval(reconnectInterval.current);
         reconnectInterval.current = null;
@@ -49,7 +48,6 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     };
 
     ws.current.onclose = (event) => {
-      console.log("WebSocket connection closed", event);
       if (!reconnectInterval.current) {
         reconnectInterval.current = window.setInterval(connectWebSocket, 5000);
       }

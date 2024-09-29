@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"errors"
-	"log"
 	"net/http"
 	"transfigurr/interfaces"
 	"transfigurr/models"
@@ -24,7 +23,6 @@ func NewSystemController(repo interfaces.SystemRepositoryInterface) *SystemContr
 func (ctrl *SystemController) GetSystems(c *gin.Context) {
 	systems, err := ctrl.Repo.GetSystems()
 	if err != nil {
-		log.Print(err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error retrieving systems"})
 		return
 	}
@@ -43,7 +41,6 @@ func (ctrl *SystemController) UpsertSystem(c *gin.Context) {
 
 	system, err := ctrl.Repo.UpsertSystem(systemId, inputSystem)
 	if err != nil {
-		log.Print(err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error upserting system"})
 		return
 	}
@@ -59,7 +56,6 @@ func (ctrl *SystemController) GetSystemById(c *gin.Context) {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "System not found"})
 		} else {
-			log.Print(err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error retrieving system"})
 		}
 		return
@@ -73,7 +69,6 @@ func (ctrl *SystemController) DeleteSystemById(c *gin.Context) {
 
 	err := ctrl.Repo.DeleteSystemById(systemId)
 	if err != nil {
-		log.Print(err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error deleting system"})
 		return
 	}

@@ -1,7 +1,6 @@
 package seeds
 
 import (
-	"log"
 	"transfigurr/models"
 
 	"gorm.io/gorm"
@@ -16,7 +15,6 @@ func SeedSystems(db *gorm.DB) {
 	var seed models.Seed
 	db.Where("name = ?", "SeedSystem").First(&seed)
 	if seed.Name == "SeedSystem" {
-		log.Print("found")
 		return
 	}
 	defaultSystems := []models.System{

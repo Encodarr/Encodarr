@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"transfigurr/startup"
 )
 
@@ -12,7 +11,7 @@ func main() {
 	// Get the underlying sql.DB and defer its close
 	sqlDB, err := db.DB()
 	if err != nil {
-		log.Fatalf("Failed to get sql.DB from gorm.DB: %v", err)
+		return
 	}
 	defer sqlDB.Close()
 

@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"log"
 	"net/http"
 	"strconv"
 	"transfigurr/interfaces"
@@ -25,7 +24,6 @@ func (ctrl *SeasonController) GetSeasons(c *gin.Context) {
 
 	seasons, err := ctrl.Repo.GetSeasons(seriesId)
 	if err != nil {
-		log.Print(err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error retrieving seasons"})
 		return
 	}
@@ -40,7 +38,6 @@ func (ctrl *SeasonController) UpsertSeason(c *gin.Context) {
 
 	seasonNum, err := strconv.Atoi(seasonNumber)
 	if err != nil {
-		log.Print(err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid season number"})
 		return
 	}
@@ -52,7 +49,6 @@ func (ctrl *SeasonController) UpsertSeason(c *gin.Context) {
 
 	season, err := ctrl.Repo.UpsertSeason(seriesId, seasonNum, inputSeason)
 	if err != nil {
-		log.Print(err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error upserting season"})
 		return
 	}
@@ -67,14 +63,12 @@ func (ctrl *SeasonController) GetSeasonById(c *gin.Context) {
 	seasonNum, err := strconv.Atoi(seasonNumber)
 
 	if err != nil {
-		log.Print(err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid season number"})
 		return
 	}
 
 	season, err := ctrl.Repo.GetSeasonById(seriesId, seasonNum)
 	if err != nil {
-		log.Print(err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error retrieving season"})
 		return
 	}
@@ -88,14 +82,12 @@ func (ctrl *SeasonController) DeleteSeasonById(c *gin.Context) {
 
 	seasonNum, err := strconv.Atoi(seasonNumber)
 	if err != nil {
-		log.Print(err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid season number"})
 		return
 	}
 
 	err = ctrl.Repo.DeleteSeasonById(seriesId, seasonNum)
 	if err != nil {
-		log.Print(err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error deleting season"})
 		return
 	}

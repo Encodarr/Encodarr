@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"log"
 	"transfigurr/models"
 
 	"gorm.io/gorm"
@@ -43,7 +42,6 @@ func (repo *SettingRepository) CreateSetting(setting models.Setting) error {
 }
 
 func (repo *SettingRepository) UpdateSetting(setting models.Setting) error {
-	log.Print(setting.Id, setting.Value)
 	return repo.DB.Save(&setting).Select("*").Error
 }
 

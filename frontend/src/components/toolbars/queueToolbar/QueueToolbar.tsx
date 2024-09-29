@@ -17,7 +17,7 @@ const QueueToolbar = ({
     setIsModalOpen(true);
   };
   const setSetting = async (key: string, value: any) => {
-    await fetch(`/api/settings`, {
+    await fetch(`/api/settings/${key}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -26,7 +26,6 @@ const QueueToolbar = ({
       body: JSON.stringify({ id: key, value: value }),
     });
   };
-
   const middleToolBarItems: any = [
     <ToolBarItem
       text="Status"
@@ -47,15 +46,15 @@ const QueueToolbar = ({
           text: "Active",
           id: "active",
           key: "active",
-          setting_id: "queue_status",
-          onClick: () => setSetting("queue_status", "active"),
+          settingId: "queueStatus",
+          onClick: () => setSetting("queueStatus", "active"),
         },
         {
           text: "Inactive",
           id: "inactive",
           key: "inactive",
-          setting_id: "queue_status",
-          onClick: () => setSetting("queue_status", "inactive"),
+          settingId: "queueStatus",
+          onClick: () => setSetting("queueStatus", "inactive"),
         },
       ]}
     />,

@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"errors"
-	"log"
 	"net/http"
 	"transfigurr/interfaces"
 	"transfigurr/repository"
@@ -27,7 +26,6 @@ func (ctrl UserController) GetUsers(c *gin.Context) {
 		if errors.Is(err, repository.ErrRecordNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Users not found"})
 		} else {
-			log.Print(err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error retrieving users"})
 		}
 		return
@@ -39,7 +37,6 @@ func (ctrl UserController) GetUsers(c *gin.Context) {
 func (ctrl UserController) UpdateUser(c *gin.Context) {
 	username := c.PostForm("username")
 	password := c.PostForm("password")
-	log.Print(username, password, "hereeee")
 	user, err := ctrl.Repo.GetUser()
 	if err != nil {
 		c.JSON(http.StatusForbidden, gin.H{"error": "User not found."})
@@ -55,7 +52,6 @@ func (ctrl UserController) UpdateUser(c *gin.Context) {
 	user.Username = username
 	user.Password = string(passwordHash)
 	if err := ctrl.Repo.UpdateUser(user); err != nil {
-		log.Print(err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error updating user"})
 		return
 	}

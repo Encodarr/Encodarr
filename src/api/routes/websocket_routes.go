@@ -2,7 +2,6 @@ package routes
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"sync"
 	"time"
@@ -29,21 +28,16 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request, encodeService inte
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		http.Error(w, "Could not open websocket connection", http.StatusBadRequest)
-		log.Printf("WebSocket upgrade error: %v", err)
 		return
 	}
 	defer conn.Close()
 
-	log.Println("WebSocket connection established")
-
 	// Set up ping/pong handlers
 	conn.SetPingHandler(func(appData string) error {
-		log.Println("Received ping")
 		return conn.WriteControl(websocket.PongMessage, []byte(appData), time.Now().Add(time.Second))
 	})
 
 	conn.SetPongHandler(func(appData string) error {
-		log.Println("Received pong")
 		return nil
 	})
 
@@ -61,11 +55,9 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request, encodeService inte
 	for {
 		_, _, err := conn.ReadMessage()
 		if err != nil {
-			log.Printf("Error reading message: %v", err)
 			break
 		}
 	}
-	log.Println("WebSocket connection closed")
 }
 
 func startDataFetchers(conn *websocket.Conn, seriesRepo interfaces.SeriesRepositoryInterface, movieRepo interfaces.MovieRepositoryInterface, profileRepo interfaces.ProfileRepositoryInterface, settingRepo interfaces.SettingRepositoryInterface, systemRepo interfaces.SystemRepositoryInterface, historyRepo interfaces.HistoryRepositoryInterface, eventRepo interfaces.EventRepositoryInterface, codecRepo interfaces.CodecRepositoryInterface, encodeService interfaces.EncodeServiceInterface, stopChan chan struct{}, writeMutex *sync.Mutex) {
@@ -86,6 +78,7 @@ func startDataFetchers(conn *websocket.Conn, seriesRepo interfaces.SeriesReposit
 		{"movies", func() (interface{}, error) { return movieRepo.GetMovies() }},
 		{"history", func() (interface{}, error) { return historyRepo.GetHistories() }},
 		{"logs", func() (interface{}, error) { return eventRepo.GetEvents() }},
+		{"queue", func() (interface{}, error) { return encodeService.GetQueue(), nil }},
 	}
 
 	for _, f := range fetchers {
@@ -98,7 +91,6 @@ func startDataFetchers(conn *websocket.Conn, seriesRepo interfaces.SeriesReposit
 				case <-ticker.C:
 					data, err := f.getter()
 					if err != nil {
-						log.Printf("Error fetching %s: %v", f.dataType, err)
 						continue
 					}
 
@@ -107,13 +99,11 @@ func startDataFetchers(conn *websocket.Conn, seriesRepo interfaces.SeriesReposit
 					}
 					jsonData, err := json.Marshal(message)
 					if err != nil {
-						log.Printf("Error marshaling %s data: %v", f.dataType, err)
 						continue
 					}
 
 					writeMutex.Lock()
 					if err := conn.WriteMessage(websocket.TextMessage, jsonData); err != nil {
-						log.Printf("Error writing %s message: %v", f.dataType, err)
 						writeMutex.Unlock()
 						return
 					}

@@ -1,7 +1,6 @@
 package tasks
 
 import (
-	"log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -47,68 +46,46 @@ func parseEpisodeAndSeasonNumber(file string, folder string) (int, int) {
 }
 
 func ScanMovie(movieID string, movieRepo interfaces.MovieRepositoryInterface, settingRepo interfaces.SettingRepositoryInterface, profileRepo interfaces.ProfileRepositoryInterface) {
-	defer func() {
-		if r := recover(); r != nil {
-			log.Printf("An error occurred scanning movie %s: %v", movieID, r)
-		}
-	}()
-
-	log.Printf("Starting scan for movie ID: %s", movieID)
 
 	if movieID == "" {
-		log.Printf("Movie ID is empty, aborting scan.")
 		return
 	}
 
 	moviesPath := filepath.Join(constants.MoviesPath, movieID)
 	if _, err := os.Stat(moviesPath); os.IsNotExist(err) {
-		log.Printf("Movies path does not exist: %s", moviesPath)
 		return
 	}
 
 	movie, err := movieRepo.GetMovieById(movieID)
-	if err != nil {
-		log.Printf("Error getting movie: %v", err)
-	}
 
 	// Initialize a new movie if it doesn't exist
 	if movie.Id == "" {
-		log.Printf("Movie with ID %s does not exist, initializing a new movie.", movieID)
 		movie = models.Movie{
 			Id: movieID,
 		}
 	}
 
-	log.Printf("Fetched movie: %+v", movie)
-
 	defaultProfile, settingsErr := settingRepo.GetSettingById("defaultProfile")
 	if settingsErr != nil {
-		log.Printf("Error getting default profile setting: %v", settingsErr)
 		return
 	}
-	log.Printf("Default profile: %+v", defaultProfile)
 
 	if movie.ProfileID == 0 {
 		profileID, err := strconv.Atoi(defaultProfile.Value)
 		if err != nil {
-			log.Printf("Error converting default profile value to int: %v", err)
 			return
 		}
 		movie.ProfileID = profileID
 	}
-	log.Printf("Movie Profile ID: %d", movie.ProfileID)
 
 	profile, profileErr := profileRepo.GetProfileById(movie.ProfileID)
 	if profileErr != nil {
-		log.Printf("Error getting profile by ID: %v", profileErr)
 		return
 	}
-	log.Printf("Profile: %+v", profile)
 
 	fileFound := false
 	err = filepath.Walk(moviesPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			log.Printf("Error walking the path %s: %v", path, err)
 			return err
 		}
 		if info.IsDir() {
@@ -126,7 +103,6 @@ func ScanMovie(movieID string, movieRepo interfaces.MovieRepositoryInterface, se
 
 		vcodec, err := utils.AnalyzeMediaFile(path)
 		if err != nil {
-			log.Printf("Error analyzing media file %s: %v", path, err)
 			return nil
 		}
 		movie.VideoCodec = vcodec
@@ -146,28 +122,21 @@ func ScanMovie(movieID string, movieRepo interfaces.MovieRepositoryInterface, se
 	}
 
 	if err != nil {
-		log.Printf("Error walking the path %s: %v", moviesPath, err)
 		return
 	}
 
-	log.Printf("Movie after scanning: %+v", movie)
 	_, err = movieRepo.UpsertMovie(movie.Id, movie)
-	if err != nil {
-		log.Printf("Error upserting movie: %v", err)
-	}
-	log.Printf("Finished scan for movie ID: %s", movieID)
+
 }
 
 func ScanSeries(encodeService interfaces.EncodeServiceInterface, seriesID string, seriesRepo interfaces.SeriesRepositoryInterface, seasonRepo interfaces.SeasonRepositoryInterface, episodeRepo interfaces.EpisodeRepositoryInterface, settingRepo interfaces.SettingRepositoryInterface, profileRepo interfaces.ProfileRepositoryInterface) {
 	defer func() {
 		if r := recover(); r != nil {
-			log.Printf("An error occurred scanning series %s: %v", seriesID, r)
 		}
 	}()
 
 	series, err := seriesRepo.GetSeriesByID(seriesID)
 	if err != nil {
-		log.Printf("Error getting series: %v\n", err)
 	}
 	series.MissingEpisodes = 0
 	if series.Id == "" {
@@ -181,7 +150,6 @@ func ScanSeries(encodeService interfaces.EncodeServiceInterface, seriesID string
 
 	defaultProfile, settingsErr := settingRepo.GetSettingById("defaultProfile")
 	if settingsErr != nil {
-		log.Print(settingsErr)
 	}
 	if series.ProfileID == 0 {
 		profileID, _ := strconv.Atoi(defaultProfile.Value)
@@ -189,7 +157,6 @@ func ScanSeries(encodeService interfaces.EncodeServiceInterface, seriesID string
 	}
 	profile, profileErr := profileRepo.GetProfileById(series.ProfileID)
 	if profileErr != nil {
-		log.Print(profileErr, profile)
 	}
 	seasons := make(map[string]*models.Season)
 
@@ -243,21 +210,16 @@ func ScanSeries(encodeService interfaces.EncodeServiceInterface, seriesID string
 			series.MissingEpisodes += 1
 			if _, ok := seasons[seasonID]; ok {
 				seasons[seasonID].MissingEpisodes += 1
-				log.Print(episode.Id)
 			}
 		}
 		if episode.Missing && series.Monitored {
-			encodeService.Enqueue(models.Item{Type: "episode", Id: episode.Id})
+			encodeService.Enqueue(models.Item{Type: "episode", Id: episode.Id, ProfileId: series.ProfileID, SeriesId: seriesID, SeasonNumber: seasonNumber, EpisodeNumber: episodeNumber, Name: series.Id, Size: episode.Size, Codec: episode.VideoCodec})
 		}
 
 		episodeRepo.UpsertEpisode(seriesID, seasonNumber, episodeNumber, *episode)
 
 		return nil
 	})
-
-	if err != nil {
-		log.Printf("Error walking the path %v: %v\n", seriesPath, err)
-	}
 
 	// Update series properties before saving
 	series.SeasonsCount = len(seasons)
@@ -266,7 +228,6 @@ func ScanSeries(encodeService interfaces.EncodeServiceInterface, seriesID string
 	series.SpaceSaved = 0
 
 	for _, season := range seasons {
-		log.Print(season.MissingEpisodes, " Missing")
 		seasonRepo.UpsertSeason(seriesID, season.SeasonNumber, *season)
 		series.EpisodeCount += season.EpisodeCount
 		series.Size += season.Size
@@ -277,28 +238,17 @@ func ScanSeries(encodeService interfaces.EncodeServiceInterface, seriesID string
 }
 
 func getDiskSpace(path string) (uint64, uint64, error) {
-	log.Printf("Checking disk space for path: %s", path)
 	usage, err := disk.Usage(path)
 	if err != nil {
-		log.Printf("Error getting disk usage for path %s: %v", path, err)
 		return 0, 0, err
 	}
-	log.Printf("Disk usage for path %s: Free: %d, Total: %d", path, usage.Free, usage.Total)
 	return usage.Free, usage.Total, nil
 }
 
 func ScanSystem(seriesRepo interfaces.SeriesRepositoryInterface, systemRepo interfaces.SystemRepositoryInterface) {
-	defer func() {
-		if r := recover(); r != nil {
-			log.Printf("An error occurred scanning system: %v", r)
-		}
-	}()
-
-	log.Println("Scanning System")
 
 	series, err := seriesRepo.GetSeries()
 	if err != nil {
-		log.Printf("Error fetching series: %v", err)
 		return
 	}
 
@@ -314,24 +264,20 @@ func ScanSystem(seriesRepo interfaces.SeriesRepositoryInterface, systemRepo inte
 
 	seriesFreeSpace, seriesTotalSpace, err := getDiskSpace(constants.SeriesPath)
 	if err != nil {
-		log.Printf("Error fetching series disk space: %v", err)
 		return
 	}
 
 	moviesFreeSpace, moviesTotalSpace, err := getDiskSpace(constants.MoviesPath)
 	if err != nil {
-		log.Printf("Error fetching Movies disk space: %v", err)
 		return
 	}
 	configFreeSpace, configTotalSpace, err := getDiskSpace(constants.ConfigPath)
 	if err != nil {
-		log.Printf("Error fetching Config disk space: %v", err)
 		return
 	}
 	transcodeFreeSpace, transcodeTotalSpace, err := getDiskSpace(constants.TranscodeFolder)
 
 	if err != nil {
-		log.Printf("Error fetching Transcode disk space: %v", err)
 		return
 	}
 

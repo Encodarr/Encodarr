@@ -39,14 +39,14 @@ func (repo *HistoryRepository) GetHistoryById(id string) (models.History, error)
 	return history, nil
 }
 
-func (repo *HistoryRepository) UpsertHistoryById(history models.History) error {
+func (repo *HistoryRepository) UpsertHistoryById(history *models.History) error {
 	if err := repo.DB.Save(history).Error; err != nil {
 		return err
 	}
 	return nil
 }
 
-func (repo *HistoryRepository) DeleteHistoryById(history models.History) error {
+func (repo *HistoryRepository) DeleteHistoryById(history *models.History) error {
 	if err := repo.DB.Delete(history).Error; err != nil {
 		return err
 	}

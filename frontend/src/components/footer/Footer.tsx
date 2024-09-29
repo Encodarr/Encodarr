@@ -6,10 +6,12 @@ const Footer = () => {
 	const wsContext = useContext(WebSocketContext);
 	const systemArray: any = wsContext?.data?.system;
 	
-	const systemDictionary: { [key: string]: any } = systemArray.reduce((acc, obj) => {
-		acc[obj.id] = obj;
-		return acc;
-	  }, {});
+	const systemDictionary: { [key: string]: any } = systemArray?.length === 0 
+  ? {} 
+  : systemArray.reduce((acc, obj) => {
+      acc[obj.id] = obj;
+      return acc;
+    }, {});
 	return (
 		<div className={styles.footer}>
 			<div className={styles.keyContainer}>

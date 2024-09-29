@@ -6,13 +6,19 @@ import ResetWrench from "../svgs/reset_wrench.svg?react";
 import QueueModal from "../modals/queueModal/QueueModal";
 import { formatETA } from "../../utils/format";
 import QueueTable from "../tables/queueTable/QueueTable";
+import { Link } from "react-router-dom";
 
 const Queue = () => {
 	const wsContext = useContext(WebSocketContext);
 	const profiles = wsContext?.data?.profiles;
 	const series = wsContext?.data?.series;
 	const queue = wsContext?.data?.queue;
-	const settings = wsContext?.data?.settings;
+	const settings: any = wsContext?.data?.settings
+		? Object.keys(wsContext?.data?.settings).reduce((acc, key) => {
+			acc[key] = wsContext?.data?.settings[key].value;
+			return acc;
+		}, {})
+		: {};
 	const [selected, setSelected] = useState<string | null>(null);
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [content, setContent] = useState<any>({});
@@ -55,64 +61,58 @@ const Queue = () => {
 											<ResetWrench className={styles.svg} />
 										</td>
 										<td className={styles.name}>
-											<a
-												href={
-													queue.current?.series_id
-														? "/series/" + queue.current?.series_id
-														: "/movies/" + queue.current?.id
-												}
-												className={styles.name}
-											>
-												{queue.current?.series_id
-													? queue.current?.series_id
+											<Link to={
+												queue.current?.type == "series"
+													? "/series/" + queue.current?.SeriesId
+													: "/movies/" + queue.current?.id
+											} className={styles.name}>
+												{queue.current?.type == "series"
+													? queue.current?.seriesId
 													: queue.current?.id}
-											</a>
+											</Link>
 										</td>
 										<td>
 											{queue?.current && (
 												<>
-													{queue?.current && queue?.current?.series_id
+													{queue?.current && queue?.current?.type == "series"
 														? "Series"
 														: "Movie"}
 												</>
 											)}
 										</td>
 										<td>
-											{queue?.current && queue?.current?.series_id ? (
+											{queue?.current && queue?.current?.seriesId ? (
 												<>
-													{queue?.current?.season_number}x
-													{queue?.current?.episode_number}
+													{queue?.current?.seasonNumber}x
+													{queue?.current?.episodeNumber}
 												</>
 											) : (
 												<></>
 											)}
 										</td>
 										<td>
-											{queue?.current?.series_id ? (
+											{queue?.current?.seriesId ? (
 												<>
-													{profiles &&
-													series &&
-													series[queue?.current?.series_id] &&
-													profiles[series[queue?.current?.series_id].profile_id]
-														? profiles[
-																series[queue?.current?.series_id].profile_id
-														  ].name
-														: ""}
+													{profiles && series && (
+														profiles.find((profile: any) =>
+															profile.id === series.find((series: any) =>
+																series.id == queue?.current?.seriesId
+															)?.profileId
+														)?.name ?? 'Profile not found'
+													)}
 												</>
 											) : (
 												<>
-													{profiles && profiles[queue?.current?.profile_id]
-														? profiles[queue?.current?.profile_id].name
-														: ""}
+													{profiles ? profiles.find((profile: any) => profile.id === queue?.current?.profileId)?.name : ""}
 												</>
 											)}
 										</td>
 										<td>
-											{settings?.queue_status == "active"
+											{settings?.queueStatus == "active"
 												? queue?.stage || "--"
 												: "Paused"}
 										</td>
-										<td>{queue?.current && formatETA(queue?.eta)}</td>
+										<td>{queue?.current.id != "" && formatETA(queue?.eta)}</td>
 										<td>
 											<div
 												style={{

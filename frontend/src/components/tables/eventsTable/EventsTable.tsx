@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 import { Tooltip } from "react-tooltip";
 
 const EventsTable = ({ sortedLogs, settings }: any) => {
-	const recordsPerPage = settings?.events_page_size || 0;
+	const recordsPerPage = settings?.eventsPageSize || 0;
 	const [currentPage, setCurrentPage] = useState(1);
 	const indexOfLastRecord = currentPage * recordsPerPage;
 	const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;

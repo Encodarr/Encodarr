@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"log"
 	"time"
 	"transfigurr/models"
 
@@ -38,8 +37,6 @@ func NewEventRepository(db *gorm.DB) *EventRepository {
 }
 
 func (repo *EventRepository) Log(level, service, message string) error {
-	log.Print("Attempting to log entry")
-	log.Printf("Level: %s, Service: %s, Message: %s", level, service, message)
 	eventEntry := models.Event{
 		Timestamp: time.Now().Format("2006-01-02T15:04:05.000"),
 		Level:     level,
@@ -48,10 +45,8 @@ func (repo *EventRepository) Log(level, service, message string) error {
 	}
 
 	if err := repo.db.Create(&eventEntry).Error; err != nil {
-		log.Printf("Error creating event entry: %v", err)
 		return err
 	}
 
-	log.Print("Event entry successfully created")
 	return nil
 }

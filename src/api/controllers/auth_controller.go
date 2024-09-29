@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	"log"
 	"net/http"
 	"transfigurr/constants"
 	"transfigurr/interfaces"
@@ -45,11 +44,9 @@ func (ctrl *AuthController) GetActivated(c *gin.Context) {
 func (ctrl *AuthController) Register(c *gin.Context) {
 	var user models.User
 	if err := c.ShouldBindJSON(&user); err != nil {
-		log.Printf("Error binding JSON: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 		return
 	}
-	log.Printf("Username: %s, Password: %s", user.Username, user.Password)
 
 	// Check if user already exists
 	_, err := ctrl.Repo.GetUser()
@@ -82,11 +79,9 @@ func (ctrl *AuthController) Login(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&loginData); err != nil {
-		log.Printf("Error binding JSON: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 		return
 	}
-	log.Printf("Username: %s, Password: %s", loginData.Username, loginData.Password)
 
 	user, err := ctrl.Repo.GetUser()
 	if err != nil || user.Username != loginData.Username {

@@ -30,7 +30,7 @@ const QueueModal = ({ isOpen, setIsOpen, content, setContent }: any) => {
       <InputContainer
         label="Page Size"
         type="text"
-        selected={content.queuePageSize.value}
+        selected={content.queuePageSize}
         onChange={(e: any) => {
           setContent({
             ...content,
@@ -42,3 +42,4 @@ const QueueModal = ({ isOpen, setIsOpen, content, setContent }: any) => {
   );
 };
 export default QueueModal;
+

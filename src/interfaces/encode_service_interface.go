@@ -5,5 +5,5 @@ import "transfigurr/models"
 type EncodeServiceInterface interface {
 	Enqueue(item models.Item)
 	Startup()
-	GetQueue() []models.Item
+	GetQueue() models.QueueStatus
 }

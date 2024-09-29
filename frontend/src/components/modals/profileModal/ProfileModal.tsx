@@ -35,7 +35,7 @@ const ProfileModal = ({
       title={header}
       onClose={onClose}
       onSave={onSave}
-      showDelete={data?.id != settings?.default_profile}
+      showDelete={data?.id != settings?.defaultProfile}
       onDelete={onDelete}
     >
       <ProfileEditor

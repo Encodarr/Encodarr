@@ -15,6 +15,17 @@ const GeneralToolbar = ({
 			return;
 		}
 		for (const key in currentSettings) {
+			if (key == "username" || key == "password") {
+				fetch(`/api/user/` + key, {
+					method: "PUT",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${localStorage.getItem("token")}`,
+					},
+					body: JSON.stringify({username: currentSettings['username'], password: currentSettings['password']}),
+				});
+			}
+			else {
 				fetch(`/api/settings/` + key, {
 					method: "PUT",
 					headers: {
@@ -23,6 +34,7 @@ const GeneralToolbar = ({
 					},
 					body: JSON.stringify({id: key, value: currentSettings[key]}),
 				});
+			}
 		}
 		setSettingsChanged(false);
 	};

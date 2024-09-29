@@ -38,7 +38,7 @@ func (repo *SeasonRepository) UpsertSeason(seriesId string, seasonNumber int, in
 			return models.Season{}, err
 		}
 	} else {
-		repo.DB.Model(&season).Updates(inputSeason)
+		repo.DB.Model(&season).Select("*").Updates(inputSeason)
 		if err := repo.DB.Save(&season).Error; err != nil {
 			return models.Season{}, err
 		}

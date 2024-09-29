@@ -2,7 +2,6 @@ package repository
 
 import (
 	"errors"
-	"log"
 	"transfigurr/models"
 
 	"gorm.io/gorm"
@@ -38,7 +37,6 @@ func (repo *ProfileRepository) UpsertProfile(profileId int, inputProfile models.
 	var profile models.Profile
 
 	if repo.DB == nil {
-		log.Printf("Database connection is nil")
 		return models.Profile{}, errors.New("database connection is nil")
 	}
 
@@ -46,13 +44,11 @@ func (repo *ProfileRepository) UpsertProfile(profileId int, inputProfile models.
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		profile = inputProfile
 		if err := repo.DB.Create(&profile).Error; err != nil {
-			log.Printf("Error creating profile: %v", err)
 			return models.Profile{}, err
 		}
 	} else {
 		repo.DB.Model(&profile).Select("*").Updates(inputProfile)
 		if err := repo.DB.Save(&profile).Error; err != nil {
-			log.Printf("Error updating profile: %v", err)
 			return models.Profile{}, err
 		}
 	}
@@ -112,7 +108,6 @@ func (repo *ProfileRepository) UpsertProfile(profileId int, inputProfile models.
 
 	// Replace with new subtitle languages
 	if err := repo.DB.Model(&profile).Association("ProfileSubtitleLanguages").Replace(inputProfile.ProfileSubtitleLanguages); err != nil {
-		log.Printf("Error updating ProfileSubtitleLanguages: %v", err)
 		return models.Profile{}, err
 	}
 
@@ -142,7 +137,6 @@ func (repo *ProfileRepository) UpsertProfile(profileId int, inputProfile models.
 
 	// Replace with new codecs
 	if err := repo.DB.Model(&profile).Association("ProfileCodecs").Replace(inputProfile.ProfileCodecs); err != nil {
-		log.Printf("Error updating ProfileCodecs: %v", err)
 		return models.Profile{}, err
 	}
 

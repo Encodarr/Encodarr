@@ -7,7 +7,6 @@ import (
 	"image"
 	"image/jpeg"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -30,7 +29,7 @@ const (
 var header = func() map[string]string {
 	decoded, err := base64.StdEncoding.DecodeString(constants.TEST)
 	if err != nil {
-		log.Fatalf("Failed to decode authorization token: %v", err)
+		return nil
 	}
 	return map[string]string{
 		"Authorization": "Bearer " + string(decoded),
@@ -93,7 +92,6 @@ func parseSeries(seriesID string) (models.TMDBSeries, error) {
 	q := req.URL.Query()
 	q.Add("query", unidecode.Unidecode(seriesID))
 	req.URL.RawQuery = q.Encode()
-	log.Print(req)
 
 	for k, v := range header {
 		req.Header.Add(k, v)
@@ -113,7 +111,6 @@ func parseSeries(seriesID string) (models.TMDBSeries, error) {
 		Results []models.TMDBSeries `json:"results"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&seriesSearchResponse); err != nil {
-		log.Print("error decoding series search response", err)
 		return models.TMDBSeries{}, err
 	}
 
@@ -126,25 +123,23 @@ func parseSeries(seriesID string) (models.TMDBSeries, error) {
 	seriesURL := fmt.Sprintf("https://api.themoviedb.org/3/tv/%v", seriesBestMatch.ID)
 	req, err = http.NewRequest("GET", seriesURL, nil)
 	if err != nil {
-		log.Fatalf("Failed to create request: %v", err)
+		return models.TMDBSeries{}, err
 	}
 	for k, v := range header {
 		req.Header.Add(k, v)
 	}
 	seriesResponse, err := client.Do(req)
 	if err != nil {
-		log.Fatalf("Failed to get series response: %v", err)
+		return models.TMDBSeries{}, err
 	}
 	defer seriesResponse.Body.Close()
 
 	if seriesResponse.StatusCode != http.StatusOK {
-		log.Printf("Non-200 status code: %d", seriesResponse.StatusCode)
 		return models.TMDBSeries{}, fmt.Errorf("failed to fetch detailed series data, status code: %d", seriesResponse.StatusCode)
 	}
 
 	var seriesData models.TMDBSeries
 	if err := json.NewDecoder(seriesResponse.Body).Decode(&seriesData); err != nil {
-		log.Print("error decoding series data", err)
 		return models.TMDBSeries{}, err
 	}
 
@@ -254,11 +249,9 @@ func parseEpisode(series models.Series, season models.Season, seriesData models.
 
 	var episodeData models.TMDBEpisode
 	if err := json.NewDecoder(resp.Body).Decode(&episodeData); err != nil {
-		log.Print("error decoding episode data", err)
 		return nil, err
 	}
 
-	log.Print(episodeData.AirDate, "air date name")
 	episode := &models.Episode{
 		Id:            fmt.Sprintf("%s%d%d", series.Id, seasonNumber, episodeNumber),
 		SeriesId:      series.Id,
@@ -268,25 +261,16 @@ func parseEpisode(series models.Series, season models.Season, seriesData models.
 		EpisodeNumber: int(episodeData.EpisodeNumber),
 		AirDate:       episodeData.AirDate,
 	}
-	log.Print(episode.AirDate, "air date", episode.EpisodeName, "episode name")
 
 	return episode, nil
 }
 
 func GetSeriesMetadata(series models.Series) (models.Series, error) {
 
-	tmdb, err := base64.StdEncoding.DecodeString(constants.TEST)
-	log.Print(string(tmdb))
-	if err != nil {
-		return series, err
-	}
-
 	seriesData, err := parseSeries(series.Id)
 	if err != nil {
-		log.Print("error parsing series data", err)
 		return series, err
 	}
-	log.Print(seriesData.LastAirDate, "last air datem")
 	series.Name = seriesData.Name
 	series.Overview = seriesData.Overview
 	series.ReleaseDate = seriesData.FirstAirDate
@@ -319,18 +303,11 @@ func GetSeriesMetadata(series models.Series) (models.Series, error) {
 
 		for episodeNumber := range season.Episodes {
 			tmdbEpisode, err := parseEpisode(series, season, seriesData, series.Seasons[seasonNumber].SeasonNumber, series.Seasons[seasonNumber].Episodes[episodeNumber].EpisodeNumber)
-			//
 			if err != nil {
-				//log.Print().Err(err).Msgf("An error occurred while parsing the episode %s, %d, %d", series.Id, seasonNumber, episodeNumber)
 				continue
 			}
-			// Modify episode to have the .Name and .airDate of the tmdbEpisode
 			series.Seasons[seasonNumber].Episodes[episodeNumber].EpisodeName = tmdbEpisode.EpisodeName
 			series.Seasons[seasonNumber].Episodes[episodeNumber].AirDate = tmdbEpisode.AirDate
-
-			// if err := setEpisode(episode); err != nil {
-			// 	log.Error().Err(err).Msgf("An error occurred while setting the episode %s, %d, %d", series.Id, seasonNumber, episodeNumber)
-			// }
 		}
 	}
 
@@ -350,24 +327,20 @@ func GetMovieMetadata(movie models.Movie) (models.Movie, error) {
 	// Create the request
 	req, err := http.NewRequest("GET", MOVIES_URL, nil)
 	if err != nil {
-		log.Printf("Error creating request: %v\n", err)
 		return movie, err
 	}
 
 	// Set the headers and parameters
 	decoded, err := base64.StdEncoding.DecodeString(constants.TEST)
 	if err != nil {
-		log.Printf("Error decoding base64: %v\n", err)
 		return movie, err
 	}
 	strtest := string(decoded)
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", strtest))
 	req.URL.RawQuery = searchParams.Encode()
-	log.Print(req)
 	// Send the request
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Printf("Error sending request: %v\n", err)
 		return movie, err
 	}
 	defer resp.Body.Close()
@@ -379,13 +352,11 @@ func GetMovieMetadata(movie models.Movie) (models.Movie, error) {
 	// Parse the response
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Printf("Error reading response body: %v\n", err)
 		return movie, err
 	}
 	var movieSearchArray map[string]interface{}
 	err = json.Unmarshal(body, &movieSearchArray)
 	if err != nil {
-		log.Printf("Error unmarshalling response body: %v\n", err)
 		return movie, err
 	}
 
@@ -400,7 +371,6 @@ func GetMovieMetadata(movie models.Movie) (models.Movie, error) {
 	// Create the request for the movie
 	req, err = http.NewRequest("GET", movieUrl, nil)
 	if err != nil {
-		log.Printf("Error creating request: %v\n", err)
 		return movie, err
 	}
 
@@ -412,7 +382,6 @@ func GetMovieMetadata(movie models.Movie) (models.Movie, error) {
 	// Send the request
 	resp, err = client.Do(req)
 	if err != nil {
-		log.Printf("Error sending request: %v\n", err)
 		return movie, err
 	}
 	defer resp.Body.Close()
@@ -426,7 +395,6 @@ func GetMovieMetadata(movie models.Movie) (models.Movie, error) {
 	var movieData models.TMDBMovie
 	err = json.NewDecoder(resp.Body).Decode(&movieData)
 	if err != nil {
-		log.Printf("Error unmarshalling response body: %v\n", err)
 		return movie, err
 	}
 
@@ -448,7 +416,6 @@ func GetMovieMetadata(movie models.Movie) (models.Movie, error) {
 		"poster_path":   movieData.PosterPath,
 		"backdrop_path": movieData.BackdropPath,
 	}, movie.Id, filepath.Join(constants.ConfigPath, "artwork", "movies")); err != nil {
-		log.Printf("Error downloading media artwork: %v\n", err)
 		return movie, err
 	}
 

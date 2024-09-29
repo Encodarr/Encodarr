@@ -2,7 +2,6 @@ package services
 
 import (
 	"io/ioutil"
-	"log"
 	"os"
 	"regexp"
 	"time"
@@ -21,13 +20,12 @@ type WatchdogHandler struct {
 func NewWatchdogService(scanService interfaces.ScanServiceInterface) *WatchdogHandler {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
-		log.Fatal(err)
+		return nil
 	}
 	return &WatchdogHandler{watcher: watcher, scanService: scanService}
 }
 
 func (w *WatchdogHandler) OnCreated(path string) {
-	log.Println("Watchdog detected a file creation")
 	if !isDirectory(path) {
 		w.WaitUntilDone(path)
 	}
@@ -35,19 +33,14 @@ func (w *WatchdogHandler) OnCreated(path string) {
 }
 
 func (w *WatchdogHandler) OnDeleted(path string) {
-	log.Println("Watchdog detected a file deletion", path)
 	if !isDirectory(path) {
-		log.Println("Path is not a directory, waiting until done:", path)
 		w.WaitUntilDone(path)
 	} else {
-		log.Println("Path is a directory, skipping WaitUntilDone:", path)
 	}
-	log.Println("Handling change for path:", path)
 	w.HandleChange(path)
 }
 
 func (w *WatchdogHandler) OnModified(path string) {
-	log.Println("Watchdog detected a file modification")
 	if !isDirectory(path) {
 		w.WaitUntilDone(path)
 	}
@@ -58,6 +51,9 @@ func (w *WatchdogHandler) WaitUntilDone(path string) {
 	oldFileSize := int64(-1)
 	for {
 		newFileSize, err := getFileSize(path)
+		if os.IsNotExist(err) {
+			break
+		}
 		if err != nil {
 			time.Sleep(5 * time.Second)
 			continue
@@ -72,7 +68,6 @@ func (w *WatchdogHandler) WaitUntilDone(path string) {
 }
 
 func (w *WatchdogHandler) HandleChange(path string) {
-	log.Print("handle change for", path)
 	var media string
 	if w.mediaType == "series" {
 		media = GetSeriesName(path)
@@ -83,12 +78,9 @@ func (w *WatchdogHandler) HandleChange(path string) {
 		}
 	} else {
 		media = GetMovieName(path)
-		log.Print("media", media)
 		if media == "" {
-			log.Print("Enqueuing all movies")
 			w.scanService.EnqueueAllMovies()
 		} else {
-			log.Print("Enqueuing movie", media)
 			w.scanService.Enqueue(models.Item{Id: media, Type: "movie"})
 		}
 	}
@@ -97,12 +89,10 @@ func (w *WatchdogHandler) HandleChange(path string) {
 func (w *WatchdogHandler) watchDirectory(directory string) {
 	err := w.watcher.Add(directory)
 	if err != nil {
-		log.Println("Error adding directory to watcher:", err)
 		return
 	}
 	files, err := ioutil.ReadDir(directory)
 	if err != nil {
-		log.Println("Error reading directory:", err)
 		return
 	}
 	for _, file := range files {
@@ -124,7 +114,6 @@ func (w *WatchdogHandler) process(directory, contentType string) {
 				if !ok {
 					return
 				}
-				log.Printf("Event detected: %s on %s", event.Op, event.Name)
 				switch event.Op {
 				case fsnotify.Create:
 					w.OnCreated(event.Name)
@@ -132,17 +121,16 @@ func (w *WatchdogHandler) process(directory, contentType string) {
 					w.OnDeleted(event.Name)
 				case fsnotify.Write:
 					w.OnModified(event.Name)
+				default:
 				}
-			case err, ok := <-w.watcher.Errors:
+			case _, ok := <-w.watcher.Errors:
 				if !ok {
 					return
 				}
-				log.Println("Error:", err)
 			}
 		}
 	}()
 
-	log.Print("starting watchdog for", directory)
 	select {}
 }
 

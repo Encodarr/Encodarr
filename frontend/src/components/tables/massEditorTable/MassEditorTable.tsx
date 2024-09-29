@@ -7,6 +7,7 @@ import BookmarkUnfilled from "../../svgs/bookmark_unfilled.svg?react";
 import ContinuingIcon from "../../svgs/play_arrow.svg?react";
 import StoppedIcon from "../../svgs/stop.svg?react";
 import { Tooltip } from "react-tooltip";
+import { Link } from "react-router-dom";
 const MassEditorTable = ({
 	sortedMedia,
 	selectedMedia,
@@ -81,24 +82,21 @@ const MassEditorTable = ({
 							<Tooltip id="stoppedTooltip" place="top" content="Stopped" />
 						</td>
 						<td>
-							<a
-								href={
-									(media?.missing_episodes == undefined
-										? "/movies/"
-										: "/series/") + media?.id
-								}
-								className={styles.name}
-							>
+							<Link to={
+								(media?.missing_episodes == undefined
+									? "/movies/"
+									: "/series/") + media?.id
+							} className={styles.name}>
 								{media?.id}
-							</a>
+							</Link>
 						</td>
 						<td>{profiles ? profiles.find((profile: any) => profile.id === media.profileId)?.name : ""}</td>
 						<td>
 							/{media?.missing_episodes ? "movies" : "series"}/
 							{media.id}
 						</td>
-						<td>{formatSize(media.space_saved)}</td>
-						<td>{formatSize(media.size)}</td>
+						<td>{formatSize(media?.spaceSaved || 0)}</td>
+						<td>{formatSize(media?.size || 0)}</td>
 					</tr>
 				))}
 			</tbody>

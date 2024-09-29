@@ -1,11 +1,11 @@
 package startup
 
 import (
-	"log"
 	"os"
 	"path/filepath"
 	"time"
 	"transfigurr/constants"
+	"transfigurr/docs"
 	"transfigurr/interfaces"
 	"transfigurr/models"
 	"transfigurr/repository"
@@ -19,7 +19,7 @@ import (
 func getParentDir() string {
 	dir, err := os.Getwd()
 	if err != nil {
-		log.Fatal(err)
+		return ""
 	}
 	return filepath.Dir(dir)
 }
@@ -42,32 +42,6 @@ func ensureDbPathExists(dbPath string) error {
 	return nil
 }
 
-// func customOpenAPI() map[string]interface{} {
-// 	// Assuming you have a function to get the Gin engine
-// 	app := getApp()
-// 	if app == nil {
-// 		return nil
-// 	}
-// 	openapiSchema := ginSwagger.WrapHandler(swaggerFiles.Handler)
-// 	return openapiSchema
-// }
-
-// func writeAPI() error {
-// 	openapiSchema := customOpenAPI()
-// 	openapiPath := "src/Transfigurr.API.V1"
-// 	if _, err := os.Stat(openapiPath); os.IsNotExist(err) {
-// 		if err := os.MkdirAll(openapiPath, os.ModePerm); err != nil {
-// 			return err
-// 		}
-// 	}
-// 	file, err := os.Create(filepath.Join(openapiPath, "openapi.json"))
-// 	if err != nil {
-// 		return err
-// 	}
-// 	defer file.Close()
-// 	return json.NewEncoder(file).Encode(openapiSchema)
-// }
-
 func writeUptimeToDB(systemRepo interfaces.SystemRepositoryInterface) error {
 	uptimeDate := time.Now()
 	// Assuming you have a function to set system data
@@ -80,14 +54,22 @@ func writeUptimeToDB(systemRepo interfaces.SystemRepositoryInterface) error {
 
 func Startup() (db *gorm.DB, scanService interfaces.ScanServiceInterface, encodeService interfaces.EncodeServiceInterface, metadataService interfaces.MetadataServiceInterface, seriesRepo interfaces.SeriesRepositoryInterface, seasonRepo interfaces.SeasonRepositoryInterface, episodeRepo interfaces.EpisodeRepositoryInterface, movieRepo interfaces.MovieRepositoryInterface, settingRepo interfaces.SettingRepositoryInterface, systemRepo interfaces.SystemRepositoryInterface, profileRepo interfaces.ProfileRepositoryInterface, authRepo interfaces.AuthRepositoryInterface, userRepo interfaces.UserRepositoryInterface, historyRepo interfaces.HistoryRepositoryInterface, eventRepo interfaces.EventRepositoryInterface, codecRepo interfaces.CodecRepositoryInterface) {
 
+	// programmatically set swagger info
+	docs.SwaggerInfo.Title = "Swagger Example API"
+	docs.SwaggerInfo.Description = "This is a sample server Petstore server."
+	docs.SwaggerInfo.Version = "1.0"
+	docs.SwaggerInfo.Host = "petstore.swagger.io"
+	docs.SwaggerInfo.BasePath = "/v2"
+	docs.SwaggerInfo.Schemes = []string{"http", "https"}
+
 	// Ensure the database path exists
 	if err := ensureDbPathExists(constants.DbPath); err != nil {
-		log.Fatalf("Failed to ensure database path exists: %v", err)
+		return
 	}
 
 	// Ensure the database path exists
 	if err := ensureDbPathExists(constants.DbPath); err != nil {
-		log.Fatalf("Failed to ensure database path exists: %v", err)
+		return
 	}
 
 	db, err := gorm.Open(sqlite.Open(constants.DbPath), &gorm.Config{
@@ -95,7 +77,7 @@ func Startup() (db *gorm.DB, scanService interfaces.ScanServiceInterface, encode
 		SkipDefaultTransaction:                   true,
 	})
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
 	InitDB(db)
 	SeedDB(db)
@@ -128,17 +110,15 @@ func Startup() (db *gorm.DB, scanService interfaces.ScanServiceInterface, encode
 	scanService.Startup()
 
 	currentDir := getParentDir()
-	log.Print("currentDir", currentDir)
 
 	// Write uptime to db
 	if err := writeUptimeToDB(systemRepo); err != nil {
-		log.Fatalf("Failed to write uptime to db: %v", err)
+		return
 	}
 
 	// Create an instance for movies
 	moviesWatchdogService := services.NewWatchdogService(scanService)
 	moviesWatchdogService.Startup(filepath.Join(currentDir, "movies"), "movies")
-	log.Print("movies")
 	// Create an instance for series
 	seriesWatchdogService := services.NewWatchdogService(scanService)
 	seriesWatchdogService.Startup(filepath.Join(currentDir, "series"), "series")

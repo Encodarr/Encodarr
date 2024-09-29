@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -37,14 +36,12 @@ func ffmpegProbe(inputFile string) (models.ProbeData, error) {
 func AnalyzeMediaFile(filePath string) (string, error) {
 	// Check if the file exists
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		log.Printf("The file %s does not exist.\n", filePath)
 		return "", err
 	}
 
 	// Check if the file is readable
 	file, err := os.OpenFile(filePath, os.O_RDONLY, 0666)
 	if err != nil {
-		log.Printf("The file %s is not readable.\n", filePath)
 		return "", err
 	}
 	file.Close()
@@ -52,7 +49,6 @@ func AnalyzeMediaFile(filePath string) (string, error) {
 	// Check if the file is writable
 	file, err = os.OpenFile(filePath, os.O_WRONLY, 0666)
 	if err != nil {
-		log.Printf("The file %s is not writable.\n", filePath)
 		return "", err
 	}
 	file.Close()
@@ -61,7 +57,6 @@ func AnalyzeMediaFile(filePath string) (string, error) {
 	cmd := exec.Command("ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=codec_name", "-of", "default=noprint_wrappers=1:nokey=1", filePath)
 	out, err := cmd.Output()
 	if err != nil {
-		log.Printf("Error running ffprobe on %s: %v\n", filePath, err)
 		return "", err
 	}
 
@@ -272,10 +267,7 @@ func createFFMPEGFilter(profile models.Profile) []string {
 }
 
 func getStreamIndices(inputFile string, streamType string, lang string) []int {
-	probeOutput, err := ffmpegProbe(inputFile)
-	if err != nil {
-		log.Printf("An error occurred while running ffmpeg on %s: %v", inputFile, err)
-	}
+	probeOutput, _ := ffmpegProbe(inputFile)
 
 	var indices []int
 	for _, stream := range probeOutput.Streams {
@@ -455,32 +447,50 @@ func createFFmpegCommand(inputFile string, outputFile string, profile models.Pro
 	return command
 }
 
-func moveOutputFile(inputFile string, outputFile string) {
+// moveOutputFile moves the outputFile to the directory of the inputFile and deletes the inputFile.
+func moveOutputFile(inputFile, outputFile string) error {
+	// Check if the input file exists
+	if _, err := os.Stat(inputFile); os.IsNotExist(err) {
+		return fmt.Errorf("input file does not exist: %s", inputFile)
+	}
+
+	// Check if the output file exists
+	if _, err := os.Stat(outputFile); os.IsNotExist(err) {
+		return fmt.Errorf("output file does not exist: %s", outputFile)
+	}
+
 	// Get the directory of the input file
 	inputFileDir := filepath.Dir(inputFile)
 
-	// Construct the new path for the output file in the input file's directory
+	// Construct the new path for the output file
 	newOutputFilePath := filepath.Join(inputFileDir, filepath.Base(outputFile))
 
-	// Rename (move) the output file to the new path
-	err := os.Rename(outputFile, newOutputFilePath)
-	if err != nil {
-		log.Fatal(err)
+	// Log the paths for debugging
+	fmt.Printf("Moving output file from %s to %s\n", outputFile, newOutputFilePath)
+
+	// Move the output file to the new path
+	if err := os.Rename(outputFile, newOutputFilePath); err != nil {
+		return fmt.Errorf("failed to move output file: %v", err)
 	}
 
-	// Delete the input file
-	err = os.Remove(inputFile)
-	if err != nil {
-		log.Fatal(err)
-	}
+	// Log the successful move
+	fmt.Printf("Successfully moved output file to %s\n", newOutputFilePath)
 
+	// // Delete the input file
+	// if err := os.Remove(inputFile); err != nil {
+	// 	return fmt.Errorf("failed to delete input file: %v", err)
+	// }
+
+	// // Log the successful deletion
+	// fmt.Printf("Successfully deleted input file %s\n", inputFile)
+
+	return nil
 }
 
-func runFFmpeg(inputFile string, outputFile string, profile models.Profile) bool {
-	//encodeService.Processing = true
+func runFFmpeg(inputFile string, outputFile string, profile models.Profile, stage *string, progress *float64, eta *int, queueStatus *string, current *models.Item) bool {
+	*stage = "Encoding"
 	probe, err := ffmpegProbe(inputFile)
 	if err != nil {
-		log.Printf("An error occurred while running ffmpeg on %s: %v", inputFile, err)
 		return false
 	}
 
@@ -488,15 +498,14 @@ func runFFmpeg(inputFile string, outputFile string, profile models.Profile) bool
 	totalDuration, _ := strconv.ParseFloat(probe.Format.Duration, 64)
 
 	command := createFFmpegCommand(inputFile, outputFile, profile, hasAudio, hasSubtitle)
-	log.Print(command)
 	cmd := exec.Command(command[0], command[1:]...)
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
-		log.Fatal(err)
+		return false
 	}
 	startTime := time.Now()
 	if err := cmd.Start(); err != nil {
-		log.Fatal(err)
+		return false
 	}
 
 	buf := make([]byte, 1024)
@@ -506,7 +515,7 @@ func runFFmpeg(inputFile string, outputFile string, profile models.Profile) bool
 			if err == io.EOF {
 				break
 			}
-			log.Fatal(err)
+			return false
 		}
 		if n == 0 {
 			break
@@ -518,20 +527,20 @@ func runFFmpeg(inputFile string, outputFile string, profile models.Profile) bool
 			currentTime := match[1]
 			currentSeconds, err := parseTimeToSeconds(currentTime)
 			if err != nil {
-				log.Fatal(err)
+				return false
 			}
-			currentProgress := (currentSeconds / totalDuration) * 100
+			*progress = (currentSeconds / totalDuration) * 100
 
 			elapsedTime := time.Since(startTime).Seconds()
-			estimatedTotalTime := elapsedTime / (currentProgress / 100)
-			currentETA := estimatedTotalTime - elapsedTime
-
-			log.Printf("Current progress: %.2f%%, ETA: %.2f seconds\n", currentProgress, currentETA)
+			estimatedTotalTime := elapsedTime / (*progress / 100)
+			*eta = int(estimatedTotalTime - elapsedTime)
 		}
 	}
-
+	*stage = "Moving"
 	moveOutputFile(inputFile, outputFile)
-
+	*stage = "Idle"
+	*eta = 0
+	*progress = 0
 	return true
 }
 
@@ -554,22 +563,10 @@ func hasAudioAndSubtitleStreams(probe models.ProbeData) (bool, bool) {
 	return hasAudio, hasSubtitle
 }
 
-func EncodeMovie(item models.Item, movieRepo interfaces.MovieRepositoryInterface, settingRepo interfaces.SettingRepositoryInterface, profileRepo interfaces.ProfileRepositoryInterface) {
-	defer func() {
-		if r := recover(); r != nil {
-			log.Printf("An error occurred processing %v: %v", item, r)
-		}
-	}()
-
-	movie, err := movieRepo.GetMovieById(item.Id)
-	if err != nil {
-		log.Printf("An error occurred while fetching movie %s: %v", item.Id, err)
-	}
-
-	profile, err := profileRepo.GetProfileById(movie.ProfileID)
-	if err != nil {
-		log.Printf("An error occurred while fetching profile %d: %v", movie.ProfileID, err)
-	}
+func EncodeMovie(item models.Item, movieRepo interfaces.MovieRepositoryInterface, historyRepo interfaces.HistoryRepositoryInterface, settingRepo interfaces.SettingRepositoryInterface, profileRepo interfaces.ProfileRepositoryInterface, stage *string, progress *float64, eta *int, queueStatus *string, current *models.Item) {
+	movie, _ := movieRepo.GetMovieById(item.Id)
+	profile, _ := profileRepo.GetProfileById(movie.ProfileID)
+	prevSize := movie.Size
 
 	extension := profile.Extension
 	filename := strings.TrimSuffix(filepath.Base(movie.Filename), filepath.Ext(movie.Filename))
@@ -577,33 +574,26 @@ func EncodeMovie(item models.Item, movieRepo interfaces.MovieRepositoryInterface
 	outputFilename := filepath.Join(filename + "." + extension)
 	outputFile := filepath.Join(constants.TranscodeFolder, outputFilename)
 	if _, err := os.Stat(inputFile); os.IsNotExist(err) {
-		log.Printf("%s does not exist", inputFile)
 		return
 	}
 
-	videoStream, err := AnalyzeMediaFile(inputFile)
-	if err != nil {
-		log.Printf("An error occurred while analyzing %s: %v", inputFile, err)
-	}
+	videoStream, _ := AnalyzeMediaFile(inputFile)
+
 	if videoStream == profile.Codec {
 		return
 	}
 
-	encodingSuccessful := runFFmpeg(inputFile, outputFile, profile)
+	*current = models.Item{Id: movie.Id, Type: "movie", Name: movie.Name, ProfileId: movie.ProfileID}
+	encodingSuccessful := runFFmpeg(inputFile, outputFile, profile, stage, progress, eta, queueStatus, current)
+	*current = models.Item{}
 
 	if !encodingSuccessful {
-		log.Printf("An error occurred while encoding %s", inputFile)
 		return
 	}
-	ffmpegData, err := ffmpegProbe(filepath.Join(filepath.Dir(movie.Path), outputFilename))
+	ffmpegData, _ := ffmpegProbe(filepath.Join(filepath.Dir(movie.Path), outputFilename))
 
-	if err != nil {
-		log.Printf("An error occurred while running ffmpeg on %s: %v", outputFilename, err)
-	}
-	size, err := strconv.Atoi(ffmpegData.Format.Size)
-	if err != nil {
-		log.Printf("An error occurred while converting size to int: %v", err)
-	}
+	size, _ := strconv.Atoi(ffmpegData.Format.Size)
+
 	movie.Size = int(size)
 	movie.SpaceSaved = movie.OriginalSize - movie.Size
 	movie.VideoCodec = ffmpegData.Streams[0].CodecName
@@ -611,32 +601,29 @@ func EncodeMovie(item models.Item, movieRepo interfaces.MovieRepositoryInterface
 	movie.Filename = outputFilename
 	movie.Path = filepath.Join(filepath.Dir(movie.Path), outputFilename)
 	movieRepo.UpsertMovie(movie.Id, movie)
-
+	history := &models.History{
+		MediaId:   movie.Id,
+		Name:      movie.Name,
+		Type:      "movie",
+		ProfileId: movie.ProfileID,
+		PrevCodec: videoStream,
+		NewCodec:  profile.Codec,
+		PrevSize:  prevSize,
+		NewSize:   movie.Size,
+		Date:      time.Now().Format(time.RFC3339),
+	}
+	historyRepo.UpsertHistoryById(history)
 }
 
-func EncodeEpisode(item models.Item, seriesRepo interfaces.SeriesRepositoryInterface, episodeRepo interfaces.EpisodeRepositoryInterface, settingRepo interfaces.SettingRepositoryInterface, profileRepo interfaces.ProfileRepositoryInterface) {
+func EncodeEpisode(item models.Item, seriesRepo interfaces.SeriesRepositoryInterface, historyRepo interfaces.HistoryRepositoryInterface, episodeRepo interfaces.EpisodeRepositoryInterface, settingRepo interfaces.SettingRepositoryInterface, profileRepo interfaces.ProfileRepositoryInterface, stage *string, progress *float64, eta *int, queueStatus *string, current *models.Item) {
 
-	defer func() {
-		if r := recover(); r != nil {
-			log.Printf("An error occurred processing %v: %v", item, r)
-		}
-	}()
+	episode, _ := episodeRepo.GetEpisodeById(item.Id)
 
-	episode, err := episodeRepo.GetEpisodeById(item.Id)
-	if err != nil {
-		log.Printf("An error occurred while fetching episode %s: %v", item.Id, err)
-	}
+	prevSize := episode.Size
 
-	series, err := seriesRepo.GetSeriesByID(episode.SeriesId)
+	series, _ := seriesRepo.GetSeriesByID(episode.SeriesId)
 
-	if err != nil {
-		log.Printf("An error occurred while fetching episode %s: %v", item.Id, err)
-	}
-
-	profile, err := profileRepo.GetProfileById(series.ProfileID)
-	if err != nil {
-		log.Printf("An error occurred while fetching profile %d: %v", series.ProfileID, err)
-	}
+	profile, _ := profileRepo.GetProfileById(series.ProfileID)
 
 	extension := profile.Extension
 	filename := strings.TrimSuffix(filepath.Base(episode.Filename), filepath.Ext(episode.Filename))
@@ -644,35 +631,23 @@ func EncodeEpisode(item models.Item, seriesRepo interfaces.SeriesRepositoryInter
 	outputFileName := filepath.Join(filename + "." + extension)
 	outputFile := filepath.Join(constants.TranscodeFolder, outputFileName)
 
-	if _, err := os.Stat(inputFile); os.IsNotExist(err) {
-		log.Printf("%s does not exist", inputFile)
-		return
-	}
-
-	videoStream, err := AnalyzeMediaFile(inputFile)
-	if err != nil {
-		log.Printf("An error occurred while analyzing %s: %v", inputFile, err)
-	}
+	videoStream, _ := AnalyzeMediaFile(inputFile)
 
 	if videoStream == profile.Codec {
 		return
 	}
 
-	encodingSuccessful := runFFmpeg(inputFile, outputFile, profile)
+	*current = models.Item{Id: series.Id, Type: "series", Name: series.Name, ProfileId: series.ProfileID, SeriesId: episode.SeriesId, SeasonNumber: episode.SeasonNumber, EpisodeNumber: episode.EpisodeNumber}
+	encodingSuccessful := runFFmpeg(inputFile, outputFile, profile, stage, progress, eta, queueStatus, current)
+	*current = models.Item{}
 
 	if !encodingSuccessful {
-		log.Printf("An error occurred while encoding %s", inputFile)
 		return
 	}
-	ffmpegData, err := ffmpegProbe(filepath.Join(filepath.Dir(episode.Path), outputFileName))
+	ffmpegData, _ := ffmpegProbe(filepath.Join(filepath.Dir(episode.Path), outputFileName))
 
-	if err != nil {
-		log.Printf("An error occurred while running ffmpeg on %s: %v", outputFileName, err)
-	}
-	size, err := strconv.Atoi(ffmpegData.Format.Size)
-	if err != nil {
-		log.Printf("An error occurred while converting size to int: %v", err)
-	}
+	size, _ := strconv.Atoi(ffmpegData.Format.Size)
+
 	episode.Size = size
 	episode.SpaceSaved = episode.OriginalSize - episode.Size
 	episode.VideoCodec = ffmpegData.Streams[0].CodecName
@@ -680,4 +655,18 @@ func EncodeEpisode(item models.Item, seriesRepo interfaces.SeriesRepositoryInter
 	episode.Filename = outputFileName
 	episode.Path = filepath.Join(filepath.Dir(episode.Path), outputFileName)
 	episodeRepo.UpsertEpisode(episode.SeriesId, episode.SeasonNumber, episode.EpisodeNumber, episode)
+	history := &models.History{
+		MediaId:       episode.Id,
+		Name:          series.Name,
+		Type:          "episode",
+		SeasonNumber:  episode.SeasonNumber,
+		EpisodeNumber: episode.EpisodeNumber,
+		ProfileId:     series.ProfileID,
+		PrevCodec:     videoStream,
+		NewCodec:      profile.Codec,
+		PrevSize:      prevSize,
+		NewSize:       episode.Size,
+		Date:          time.Now().Format(time.RFC3339),
+	}
+	historyRepo.UpsertHistoryById(history)
 }

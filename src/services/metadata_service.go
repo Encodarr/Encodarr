@@ -2,7 +2,6 @@ package services
 
 import (
 	"fmt"
-	"log"
 	"sync"
 	"transfigurr/interfaces"
 	"transfigurr/models"
@@ -54,14 +53,12 @@ func NewMetadataService(eventService interfaces.EventServiceInterface, seriesRep
 func (s *MetadataService) EnqueueAll() {
 	series, err := s.seriesRepo.GetSeries()
 	if err != nil {
-		log.Print(err)
 	}
 	for _, series := range series {
 		s.Enqueue(models.Item{Type: "series", Id: series.Id})
 	}
 	movies, err := s.movieRepo.GetMovies()
 	if err != nil {
-		log.Print(err)
 	}
 	for _, m := range movies {
 		s.Enqueue(models.Item{Type: "movie", Id: m.Id})
@@ -96,24 +93,17 @@ func (s *MetadataService) processItem(item models.Item) {
 	if item.Type == "movie" {
 		movie, err := s.movieRepo.GetMovieById(item.Id)
 		if err != nil {
-			log.Print(err)
 		}
 		movie, err = utils.GetMovieMetadata(movie)
 		if err != nil {
-			log.Print(err)
 		}
 		s.movieRepo.UpsertMovie(movie.Id, movie)
 	} else if item.Type == "series" {
 		series, err := s.seriesRepo.GetSeriesByID(item.Id)
 		if err != nil {
-			log.Print(err)
 		}
-		log.Print("getting series meta")
 		series, err = utils.GetSeriesMetadata(series)
-		if err != nil {
-			log.Print(err)
-		}
-		log.Print(series.LastAirDate, "last air date")
+
 		s.seriesRepo.UpsertSeries(series.Id, series)
 		for _, season := range series.Seasons {
 			for _, episode := range season.Episodes {

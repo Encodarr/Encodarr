@@ -6,8 +6,6 @@ import (
 	"time"
 	"transfigurr/interfaces"
 	"transfigurr/models"
-
-	_ "github.com/jinzhu/gorm/dialects/sqlite"
 )
 
 type EventService struct {

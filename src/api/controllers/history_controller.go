@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"errors"
-	"log"
 	"net/http"
 	"transfigurr/interfaces"
 	"transfigurr/models"
@@ -27,7 +26,6 @@ func (ctrl HistoryController) GetHistories(c *gin.Context) {
 		if errors.Is(err, repository.ErrRecordNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Histories not found"})
 		} else {
-			log.Print(err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error retrieving histories"})
 		}
 		return
@@ -49,13 +47,11 @@ func (ctrl HistoryController) UpsertHistory(c *gin.Context) {
 	if err != nil && errors.Is(err, repository.ErrRecordNotFound) {
 		history = inputHistory
 	} else if err != nil {
-		log.Print(err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error retrieving history"})
 		return
 	}
 
-	if err := ctrl.Repo.UpsertHistoryById(history); err != nil {
-		log.Print(err)
+	if err := ctrl.Repo.UpsertHistoryById(&history); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error upserting history"})
 		return
 	}
@@ -70,7 +66,6 @@ func (ctrl HistoryController) GetHistoryById(c *gin.Context) {
 		if errors.Is(err, repository.ErrRecordNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "History not found"})
 		} else {
-			log.Print(err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error retrieving history"})
 		}
 		return
@@ -83,13 +78,11 @@ func (ctrl HistoryController) DeleteHistoryById(c *gin.Context) {
 	historyId := c.Param("historyId")
 	history, err := ctrl.Repo.GetHistoryById(historyId)
 	if err != nil {
-		log.Print(err)
 		c.JSON(http.StatusNotFound, gin.H{"error": "History not found"})
 		return
 	}
 
-	if err := ctrl.Repo.DeleteHistoryById(history); err != nil {
-		log.Print(err)
+	if err := ctrl.Repo.DeleteHistoryById(&history); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error deleting history"})
 		return
 	}

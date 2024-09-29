@@ -55,8 +55,12 @@ const HeaderComponent = () => {
 		});
 	};
 
-	const settings = wsContext?.data?.settings;
-
+	const settings: any = wsContext?.data?.settings
+	? Object.keys(wsContext?.data?.settings).reduce((acc, key) => {
+		acc[key] = wsContext?.data?.settings[key].value;
+		return acc;
+	  }, {})
+	: {};
 	return (
 		<div className={styles.header}>
 			<div className={styles.left}>

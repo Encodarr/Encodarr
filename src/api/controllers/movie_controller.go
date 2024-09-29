@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"errors"
-	"log"
 	"net/http"
 	"transfigurr/interfaces"
 	"transfigurr/models"
@@ -24,7 +23,6 @@ func NewMovieController(repo interfaces.MovieRepositoryInterface) *MovieControll
 func (ctrl *MovieController) GetMovies(c *gin.Context) {
 	movieList, err := ctrl.Repo.GetMovies()
 	if err != nil {
-		log.Print(err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error retrieving movie"})
 		return
 	}
@@ -37,14 +35,12 @@ func (ctrl *MovieController) UpsertMovie(c *gin.Context) {
 	id := c.Param("movieId")
 
 	if err := c.ShouldBindJSON(&inputMovie); err != nil {
-		log.Printf("Error binding JSON: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 
 	movie, err := ctrl.Repo.UpsertMovie(id, inputMovie)
 	if err != nil {
-		log.Print(err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error upserting movie"})
 		return
 	}
@@ -60,7 +56,6 @@ func (ctrl *MovieController) GetMovieByID(c *gin.Context) {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Movie not found"})
 		} else {
-			log.Print(err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error retrieving movie"})
 		}
 		return
@@ -74,7 +69,6 @@ func (ctrl *MovieController) DeleteMovieByID(c *gin.Context) {
 
 	err := ctrl.Repo.DeleteMovieById(id)
 	if err != nil {
-		log.Print(err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error deleting movie"})
 		return
 	}

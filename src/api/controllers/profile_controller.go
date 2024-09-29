@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"log"
 	"net/http"
 	"strconv"
 	"transfigurr/interfaces"
@@ -58,7 +57,6 @@ func (ctrl *ProfileController) UpsertProfile(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&inputProfile); err != nil {
-		log.Print(err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}

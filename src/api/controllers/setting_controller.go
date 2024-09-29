@@ -3,7 +3,6 @@ package controllers
 
 import (
 	"errors"
-	"log"
 	"net/http"
 	"transfigurr/interfaces"
 	"transfigurr/models"
@@ -25,7 +24,6 @@ func NewSettingController(repo interfaces.SettingRepositoryInterface) *SettingCo
 func (ctrl *SettingController) GetSettings(c *gin.Context) {
 	settings, err := ctrl.Repo.GetAllSettings()
 	if err != nil {
-		log.Print(err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error retrieving settings"})
 		return
 	}
@@ -49,14 +47,12 @@ func (ctrl *SettingController) UpsertSetting(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Setting not found"})
 		return
 	} else if err != nil {
-		log.Print(err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error retrieving setting"})
 		return
 	} else {
 		// Update the existing setting
 		err = ctrl.Repo.UpdateSetting(inputSetting)
 		if err != nil {
-			log.Print(err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error updating setting"})
 			return
 		}
@@ -69,7 +65,6 @@ func (ctrl *SettingController) GetSettingById(c *gin.Context) {
 
 	setting, err := ctrl.Repo.GetSettingById(settingId)
 	if err != nil {
-		log.Print(err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error retrieving setting"})
 		return
 	}
@@ -82,14 +77,12 @@ func (ctrl *SettingController) DeleteSettingById(c *gin.Context) {
 
 	setting, err := ctrl.Repo.GetSettingById(settingId)
 	if err != nil {
-		log.Print(err)
 		c.JSON(http.StatusNotFound, gin.H{"error": "Setting not found"})
 		return
 	}
 
 	err = ctrl.Repo.DeleteSetting(setting)
 	if err != nil {
-		log.Print(err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error deleting setting"})
 		return
 	}

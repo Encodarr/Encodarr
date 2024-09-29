@@ -7,6 +7,8 @@ import (
 	"transfigurr/interfaces"
 
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func SetupRouter(scanService interfaces.ScanServiceInterface, encodeService interfaces.EncodeServiceInterface, metadataService interfaces.MetadataServiceInterface, seriesRepo interfaces.SeriesRepositoryInterface, seasonRepo interfaces.SeasonRepositoryInterface, episodeRepo interfaces.EpisodeRepositoryInterface, movieRepo interfaces.MovieRepositoryInterface, settingRepo interfaces.SettingRepositoryInterface, systemRepo interfaces.SystemRepositoryInterface, profileRepo interfaces.ProfileRepositoryInterface, authRepo interfaces.AuthRepositoryInterface, userRepo interfaces.UserRepositoryInterface, historyRepo interfaces.HistoryRepositoryInterface, eventRepo interfaces.EventRepositoryInterface, codecRepo interfaces.CodecRepositoryInterface) *gin.Engine {
@@ -34,5 +36,8 @@ func SetupRouter(scanService interfaces.ScanServiceInterface, encodeService inte
 	router.NoRoute(func(c *gin.Context) {
 		c.File(constants.IndexFilePath)
 	})
+
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
 	return router
 }

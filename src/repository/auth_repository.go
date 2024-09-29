@@ -22,7 +22,7 @@ func (repo *AuthRepository) GetUser() (models.User, error) {
 
 	if err := repo.DB.First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return models.User{}, nil // or handle the not found case as needed
+			return models.User{}, err
 		}
 		return models.User{}, err
 	}

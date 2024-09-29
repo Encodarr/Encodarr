@@ -3,7 +3,6 @@ package services
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"sync"
 	"transfigurr/constants"
 	"transfigurr/interfaces"
@@ -65,7 +64,6 @@ func (s *ScanService) EnqueueAll() {
 func (s *ScanService) EnqueueAllMovies() {
 	movies, err := s.movieRepo.GetMovies()
 	if err != nil {
-		log.Print(err)
 		return
 	}
 	movieFiles, err := ioutil.ReadDir(constants.MoviesPath)
@@ -83,7 +81,6 @@ func (s *ScanService) EnqueueAllMovies() {
 func (s *ScanService) EnqueueAllSeries() {
 	series, err := s.seriesRepo.GetSeries()
 	if err != nil {
-		log.Print(err)
 		return
 	}
 	seriesFiles, err := ioutil.ReadDir(constants.SeriesPath)
@@ -127,11 +124,9 @@ func (s *ScanService) process() {
 func (s *ScanService) processItem(item models.Item) {
 	if item.Type == "movie" {
 		tasks.ScanMovie(item.Id, s.movieRepo, s.settingRepo, s.profileRepo)
-		log.Print("bouta validate", item.Id)
 		tasks.ValidateMovie(item.Id, s.movieRepo)
 		movie, err := s.movieRepo.GetMovieById(item.Id)
 		if err != nil {
-			log.Print(err)
 			return
 		}
 
@@ -140,17 +135,13 @@ func (s *ScanService) processItem(item models.Item) {
 			s.metadataService.Enqueue(models.Item{Type: "movie", Id: movie.Id})
 		}
 		if movie.Missing && movie.Monitored {
-			s.encodeService.Enqueue(models.Item{Type: "movie", Id: movie.Id})
+			s.encodeService.Enqueue(models.Item{Type: "movie", Id: movie.Id, ProfileId: movie.ProfileID, Codec: movie.VideoCodec, Size: movie.Size})
 		}
 	} else if item.Type == "series" {
 		s.eventService.Log("INFO", "scan", "Scanning series: "+item.Id)
-		log.Print("Scanning series: " + item.Id)
 		tasks.ScanSeries(s.encodeService, item.Id, s.seriesRepo, s.seasonRepo, s.episodeRepo, s.settingRepo, s.profileRepo)
 		tasks.ValidateSeries(item.Id, s.seriesRepo, s.seasonRepo, s.episodeRepo)
-		series, err := s.seriesRepo.GetSeriesByID(item.Id)
-		if err != nil {
-			log.Print(err)
-		}
+		series, _ := s.seriesRepo.GetSeriesByID(item.Id)
 
 		if series.Name == "" {
 			s.metadataService.Enqueue(models.Item{Type: "series", Id: series.Id})

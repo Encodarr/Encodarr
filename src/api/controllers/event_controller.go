@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"errors"
-	"log"
 	"net/http"
 	"transfigurr/interfaces"
 	"transfigurr/models"
@@ -27,7 +26,6 @@ func (ctrl EventController) GetEvents(c *gin.Context) {
 		if errors.Is(err, repository.ErrRecordNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Events not found"})
 		} else {
-			log.Print(err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error retrieving events"})
 		}
 		return
@@ -49,13 +47,11 @@ func (ctrl EventController) UpsertEvent(c *gin.Context) {
 	if err != nil && errors.Is(err, repository.ErrRecordNotFound) {
 		event = inputEvent
 	} else if err != nil {
-		log.Print(err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error retrieving event"})
 		return
 	}
 
 	if err := ctrl.Repo.UpsertEventById(event); err != nil {
-		log.Print(err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error upserting event"})
 		return
 	}
@@ -70,7 +66,6 @@ func (ctrl EventController) GetEventById(c *gin.Context) {
 		if errors.Is(err, repository.ErrRecordNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Event not found"})
 		} else {
-			log.Print(err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error retrieving event"})
 		}
 		return
@@ -83,13 +78,11 @@ func (ctrl EventController) DeleteEventById(c *gin.Context) {
 	eventId := c.Param("eventId")
 	event, err := ctrl.Repo.GetEventById(eventId)
 	if err != nil {
-		log.Print(err)
 		c.JSON(http.StatusNotFound, gin.H{"error": "Event not found"})
 		return
 	}
 
 	if err := ctrl.Repo.DeleteEventById(event); err != nil {
-		log.Print(err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error deleting event"})
 		return
 	}
