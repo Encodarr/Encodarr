@@ -1,14 +1,11 @@
 package controllers
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"encoding/json"
 	"log"
 	"net/http"
 	"time"
 	"transfigurr/api/jwt"
-	"transfigurr/constants"
 	"transfigurr/interfaces"
 	"transfigurr/models"
 
@@ -23,14 +20,6 @@ func NewAuthController(repo interfaces.AuthRepositoryInterface) *AuthController 
 	return &AuthController{
 		Repo: repo,
 	}
-}
-
-func generateSecretKey() (string, error) {
-	bytes := make([]byte, constants.SecretKeyLength)
-	if _, err := rand.Read(bytes); err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(bytes), nil
 }
 
 func (ctrl *AuthController) GetActivated(w http.ResponseWriter, r *http.Request) {

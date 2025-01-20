@@ -54,53 +54,53 @@ var header = func() map[string]string {
 
 var re = regexp.MustCompile(`\s*\(.*?\)\s*`)
 
-func parseMovie(movieID string) (models.TMDBMovie, error) {
-	client := &http.Client{}
-	req, err := http.NewRequest("GET", MOVIES_URL, nil)
-	if err != nil {
-		return models.TMDBMovie{}, err
-	}
+// func parseMovie(movieID string) (models.TMDBMovie, error) {
+// 	client := &http.Client{}
+// 	req, err := http.NewRequest("GET", MOVIES_URL, nil)
+// 	if err != nil {
+// 		return models.TMDBMovie{}, err
+// 	}
 
-	q := req.URL.Query()
-	q.Add("query", toASCII(movieID))
-	req.URL.RawQuery = q.Encode()
+// 	q := req.URL.Query()
+// 	q.Add("query", toASCII(movieID))
+// 	req.URL.RawQuery = q.Encode()
 
-	for k, v := range header {
-		req.Header.Add(k, v)
-	}
+// 	for k, v := range header {
+// 		req.Header.Add(k, v)
+// 	}
 
-	resp, err := client.Do(req)
-	if err != nil {
-		return models.TMDBMovie{}, err
-	}
-	defer resp.Body.Close()
+// 	resp, err := client.Do(req)
+// 	if err != nil {
+// 		return models.TMDBMovie{}, err
+// 	}
+// 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return models.TMDBMovie{}, fmt.Errorf("failed to fetch movie data")
-	}
+// 	if resp.StatusCode != http.StatusOK {
+// 		return models.TMDBMovie{}, fmt.Errorf("failed to fetch movie data")
+// 	}
 
-	var result map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return models.TMDBMovie{}, err
-	}
+// 	var result map[string]interface{}
+// 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+// 		return models.TMDBMovie{}, err
+// 	}
 
-	if len(result["results"].([]interface{})) == 0 {
-		return models.TMDBMovie{}, fmt.Errorf("no results found")
-	}
+// 	if len(result["results"].([]interface{})) == 0 {
+// 		return models.TMDBMovie{}, fmt.Errorf("no results found")
+// 	}
 
-	var searchResponse struct {
-		Results []models.TMDBMovie `json:"results"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&searchResponse); err != nil {
-		return models.TMDBMovie{}, err
-	}
+// 	var searchResponse struct {
+// 		Results []models.TMDBMovie `json:"results"`
+// 	}
+// 	if err := json.NewDecoder(resp.Body).Decode(&searchResponse); err != nil {
+// 		return models.TMDBMovie{}, err
+// 	}
 
-	if len(searchResponse.Results) == 0 {
-		return models.TMDBMovie{}, fmt.Errorf("no results found")
-	}
+// 	if len(searchResponse.Results) == 0 {
+// 		return models.TMDBMovie{}, fmt.Errorf("no results found")
+// 	}
 
-	return searchResponse.Results[0], nil
-}
+// 	return searchResponse.Results[0], nil
+// }
 
 func parseSeries(seriesID string) (models.TMDBSeries, error) {
 	client := &http.Client{}

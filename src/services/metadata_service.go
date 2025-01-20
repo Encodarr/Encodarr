@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"log"
 	"sync"
 	"transfigurr/interfaces"
 	"transfigurr/models"
@@ -104,6 +105,9 @@ func (s *MetadataService) processItem(item models.Item) {
 		if err != nil {
 		}
 		series, err = utils.GetSeriesMetadata(series)
+		if err != nil {
+			log.Print(err)
+		}
 
 		s.seriesRepo.UpsertSeries(series.Id, series)
 		for _, season := range series.Seasons {

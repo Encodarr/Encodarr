@@ -57,6 +57,9 @@ func ScanMovie(movieID string, movieRepo interfaces.MovieRepositoryInterface, se
 	}
 
 	movie, err := movieRepo.GetMovieById(movieID)
+	if err != nil {
+		return
+	}
 
 	// Initialize a new movie if it doesn't exist
 	if movie.Id == "" {
@@ -126,6 +129,9 @@ func ScanMovie(movieID string, movieRepo interfaces.MovieRepositoryInterface, se
 	}
 
 	_, err = movieRepo.UpsertMovie(movie.Id, movie)
+	if err != nil {
+		return
+	}
 
 }
 
@@ -157,6 +163,7 @@ func ScanSeries(encodeService interfaces.EncodeServiceInterface, seriesID string
 	}
 	profile, profileErr := profileRepo.GetProfileById(series.ProfileID)
 	if profileErr != nil {
+		return
 	}
 	seasons := make(map[string]*models.Season)
 
