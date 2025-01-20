@@ -4,14 +4,14 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
+	"time"
+	"transfigurr/api/jwt"
 	"transfigurr/constants"
 	"transfigurr/interfaces"
 	"transfigurr/models"
 
-	"github.com/dgrijalva/jwt-go"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -96,11 +96,13 @@ func (ctrl *AuthController) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+	claims := jwt.Claims{
 		"username": loginData.Username,
-	})
+		"exp":      time.Now().Add(24 * time.Hour).Unix(),
+	}
 
-	tokenString, err := token.SignedString([]byte(user.Secret))
+	token := jwt.NewToken(claims)
+	tokenString, err := token.Sign([]byte(user.Secret))
 	if err != nil {
 		http.Error(w, "Could not generate token", http.StatusInternalServerError)
 		return
@@ -118,22 +120,18 @@ func (ctrl *AuthController) LoginToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return []byte(user.Secret), nil
-	})
-
+	token, err := jwt.Parse(tokenString, []byte(user.Secret))
 	if err != nil {
-		http.Error(w, "Failed to parse token: "+err.Error(), http.StatusUnauthorized)
+		http.Error(w, "Invalid token: "+err.Error(), http.StatusUnauthorized)
 		return
 	}
 
-	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		response := map[string]string{"message": "Welcome " + claims["username"].(string)}
-		json.NewEncoder(w).Encode(response)
-	} else {
-		http.Error(w, "Invalid token", http.StatusUnauthorized)
+	username, ok := token.Claims["username"].(string)
+	if !ok {
+		http.Error(w, "Invalid token claims", http.StatusUnauthorized)
+		return
 	}
+
+	response := map[string]string{"message": "Welcome " + username}
+	json.NewEncoder(w).Encode(response)
 }

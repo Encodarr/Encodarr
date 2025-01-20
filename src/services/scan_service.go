@@ -2,7 +2,7 @@ package services
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"sync"
 	"transfigurr/constants"
 	"transfigurr/interfaces"
@@ -45,7 +45,7 @@ func (s *ScanService) EnqueueAllMovies() {
 	if err != nil {
 		return
 	}
-	movieFiles, err := ioutil.ReadDir(constants.MoviesPath)
+	movieFiles, err := os.ReadDir(constants.MoviesPath)
 	if err != nil {
 		return
 	}
@@ -62,7 +62,7 @@ func (s *ScanService) EnqueueAllSeries() {
 	if err != nil {
 		return
 	}
-	seriesFiles, err := ioutil.ReadDir(constants.SeriesPath)
+	seriesFiles, err := os.ReadDir(constants.SeriesPath)
 	if err != nil {
 		return
 	}

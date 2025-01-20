@@ -6,18 +6,15 @@ import (
 	"fmt"
 	"image"
 	"image/jpeg"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"transfigurr/constants"
 	"transfigurr/models"
-
-	"github.com/rainycape/unidecode"
-
-	"github.com/mitchellh/mapstructure"
 )
 
 const (
@@ -25,6 +22,25 @@ const (
 	MOVIES_URL  = "https://api.themoviedb.org/3/search/movie"
 	ARTWORK_URL = "https://image.tmdb.org/t/p/original"
 )
+
+func toASCII(str string) string {
+	// Simple ASCII conversion for common characters
+	replacements := map[string]string{
+		"á": "a", "à": "a", "ã": "a", "â": "a", "ä": "a",
+		"é": "e", "è": "e", "ê": "e", "ë": "e",
+		"í": "i", "ì": "i", "î": "i", "ï": "i",
+		"ó": "o", "ò": "o", "õ": "o", "ô": "o", "ö": "o",
+		"ú": "u", "ù": "u", "û": "u", "ü": "u",
+		"ý": "y", "ÿ": "y",
+		"ñ": "n",
+	}
+
+	result := str
+	for accented, ascii := range replacements {
+		result = strings.ReplaceAll(result, accented, ascii)
+	}
+	return result
+}
 
 var header = func() map[string]string {
 	decoded, err := base64.StdEncoding.DecodeString(constants.TEST)
@@ -46,7 +62,7 @@ func parseMovie(movieID string) (models.TMDBMovie, error) {
 	}
 
 	q := req.URL.Query()
-	q.Add("query", unidecode.Unidecode(movieID))
+	q.Add("query", toASCII(movieID))
 	req.URL.RawQuery = q.Encode()
 
 	for k, v := range header {
@@ -72,14 +88,18 @@ func parseMovie(movieID string) (models.TMDBMovie, error) {
 		return models.TMDBMovie{}, fmt.Errorf("no results found")
 	}
 
-	tmdbMovie := result["results"].([]interface{})[0].(map[string]interface{})
-
-	var movie models.TMDBMovie
-	if err := mapstructure.Decode(tmdbMovie, &movie); err != nil {
+	var searchResponse struct {
+		Results []models.TMDBMovie `json:"results"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&searchResponse); err != nil {
 		return models.TMDBMovie{}, err
 	}
 
-	return movie, nil
+	if len(searchResponse.Results) == 0 {
+		return models.TMDBMovie{}, fmt.Errorf("no results found")
+	}
+
+	return searchResponse.Results[0], nil
 }
 
 func parseSeries(seriesID string) (models.TMDBSeries, error) {
@@ -90,7 +110,7 @@ func parseSeries(seriesID string) (models.TMDBSeries, error) {
 	}
 
 	q := req.URL.Query()
-	q.Add("query", unidecode.Unidecode(seriesID))
+	q.Add("query", toASCII(seriesID))
 	req.URL.RawQuery = q.Encode()
 
 	for k, v := range header {
@@ -319,7 +339,7 @@ func GetMovieMetadata(movie models.Movie) (models.Movie, error) {
 	// Create the search parameters
 	searchParams := url.Values{}
 
-	transliteratedID := unidecode.Unidecode(movie.Id)
+	transliteratedID := toASCII(movie.Id)
 	cleanedID := re.ReplaceAllString(transliteratedID, "")
 
 	searchParams.Add("query", cleanedID)
@@ -350,7 +370,7 @@ func GetMovieMetadata(movie models.Movie) (models.Movie, error) {
 	}
 
 	// Parse the response
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return movie, err
 	}
