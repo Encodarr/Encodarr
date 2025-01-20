@@ -227,6 +227,9 @@ func ScanSeries(encodeService interfaces.EncodeServiceInterface, seriesID string
 
 		return nil
 	})
+	if err != nil {
+		return
+	}
 
 	// Update series properties before saving
 	series.SeasonsCount = len(seasons)
