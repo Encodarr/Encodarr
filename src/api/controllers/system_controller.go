@@ -1,12 +1,12 @@
 package controllers
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"transfigurr/interfaces"
 	"transfigurr/models"
 
-	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
@@ -20,58 +20,48 @@ func NewSystemController(repo interfaces.SystemRepositoryInterface) *SystemContr
 	}
 }
 
-func (ctrl *SystemController) GetSystems(c *gin.Context) {
+func (ctrl *SystemController) GetSystems(w http.ResponseWriter, r *http.Request) {
 	systems, err := ctrl.Repo.GetSystems()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error retrieving systems"})
+		http.Error(w, "Error retrieving systems", http.StatusInternalServerError)
 		return
 	}
-
-	c.IndentedJSON(http.StatusOK, systems)
+	json.NewEncoder(w).Encode(systems)
 }
 
-func (ctrl *SystemController) UpsertSystem(c *gin.Context) {
-	var inputSystem models.System
-	systemId := c.Param("systemId")
+func (ctrl *SystemController) GetSystemById(w http.ResponseWriter, r *http.Request, systemId string) {
+	system, err := ctrl.Repo.GetSystemById(systemId)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			http.Error(w, "System not found", http.StatusNotFound)
+		} else {
+			http.Error(w, "Error retrieving system", http.StatusInternalServerError)
+		}
+		return
+	}
+	json.NewEncoder(w).Encode(system)
+}
 
-	if err := c.ShouldBindJSON(&inputSystem); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+func (ctrl *SystemController) UpsertSystem(w http.ResponseWriter, r *http.Request, systemId string) {
+	var inputSystem models.System
+	if err := json.NewDecoder(r.Body).Decode(&inputSystem); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
 	system, err := ctrl.Repo.UpsertSystem(systemId, inputSystem)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error upserting system"})
+		http.Error(w, "Error upserting system", http.StatusInternalServerError)
 		return
 	}
-
-	c.IndentedJSON(http.StatusOK, system)
+	json.NewEncoder(w).Encode(system)
 }
 
-func (ctrl *SystemController) GetSystemById(c *gin.Context) {
-	systemId := c.Param("systemId")
-
-	system, err := ctrl.Repo.GetSystemById(systemId)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusNotFound, gin.H{"error": "System not found"})
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error retrieving system"})
-		}
-		return
-	}
-
-	c.IndentedJSON(http.StatusOK, system)
-}
-
-func (ctrl *SystemController) DeleteSystemById(c *gin.Context) {
-	systemId := c.Param("systemId")
-
+func (ctrl *SystemController) DeleteSystemById(w http.ResponseWriter, r *http.Request, systemId string) {
 	err := ctrl.Repo.DeleteSystemById(systemId)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error deleting system"})
+		http.Error(w, "Error deleting system", http.StatusInternalServerError)
 		return
 	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "System deleted successfully"})
+	json.NewEncoder(w).Encode(map[string]string{"message": "System deleted successfully"})
 }

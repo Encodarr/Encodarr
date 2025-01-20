@@ -5,6 +5,7 @@ import (
 	"sync"
 	"transfigurr/interfaces"
 	"transfigurr/models"
+	"transfigurr/types"
 	"transfigurr/utils"
 )
 
@@ -28,23 +29,23 @@ type MetadataService struct {
 	codecRepo     interfaces.CodecRepositoryInterface
 }
 
-func NewMetadataService(eventService interfaces.EventServiceInterface, seriesRepo interfaces.SeriesRepositoryInterface, seasonRepo interfaces.SeasonRepositoryInterface, episodeRepo interfaces.EpisodeRepositoryInterface, movieRepo interfaces.MovieRepositoryInterface, settingRepo interfaces.SettingRepositoryInterface, systemRepo interfaces.SystemRepositoryInterface, profileRepo interfaces.ProfileRepositoryInterface, authRepo interfaces.AuthRepositoryInterface, userRepo interfaces.UserRepositoryInterface, historyRepo interfaces.HistoryRepositoryInterface, eventRepo interfaces.EventRepositoryInterface, codecRepo interfaces.CodecRepositoryInterface) interfaces.MetadataServiceInterface {
+func NewMetadataService(eventService interfaces.EventServiceInterface, repositories *types.Repositories) interfaces.MetadataServiceInterface {
 	service := &MetadataService{
 		metadataQueue: make([]models.Item, 0),
 		metadataSet:   make(map[string]struct{}),
 		eventService:  eventService,
-		seriesRepo:    seriesRepo,
-		seasonRepo:    seasonRepo,
-		episodeRepo:   episodeRepo,
-		movieRepo:     movieRepo,
-		settingRepo:   settingRepo,
-		systemRepo:    systemRepo,
-		profileRepo:   profileRepo,
-		authRepo:      authRepo,
-		userRepo:      userRepo,
-		historyRepo:   historyRepo,
-		eventRepo:     eventRepo,
-		codecRepo:     codecRepo,
+		seriesRepo:    repositories.SeriesRepo,
+		seasonRepo:    repositories.SeasonRepo,
+		episodeRepo:   repositories.EpisodeRepo,
+		movieRepo:     repositories.MovieRepo,
+		settingRepo:   repositories.SettingRepo,
+		systemRepo:    repositories.SystemRepo,
+		profileRepo:   repositories.ProfileRepo,
+		authRepo:      repositories.AuthRepo,
+		userRepo:      repositories.UserRepo,
+		historyRepo:   repositories.HistoryRepo,
+		eventRepo:     repositories.EventRepo,
+		codecRepo:     repositories.CodecRepo,
 	}
 	service.cond = sync.NewCond(&service.mu)
 	return service

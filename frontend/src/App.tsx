@@ -41,7 +41,7 @@ function App() {
     const fetchToken = async () => {
       const token = localStorage.getItem("token");
       if (token) {
-        const response = await fetch(`/api/logintoken`, {
+        const response = await fetch(`/api/auth/logintoken`, {
           method: "POST",
           headers: {
             Authorization: token,

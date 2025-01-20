@@ -187,7 +187,7 @@ func SeedSettings(db *gorm.DB) {
 		},
 		{
 			Id:    "port",
-			Value: "7889",
+			Value: "9889",
 		},
 	}
 	for _, defaultSetting := range defaultSettings {

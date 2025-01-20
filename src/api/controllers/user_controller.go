@@ -1,13 +1,11 @@
 package controllers
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"transfigurr/interfaces"
 	"transfigurr/repository"
-
-	"github.com/gin-gonic/gin"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type UserController struct {
@@ -20,41 +18,50 @@ func NewUserController(repo interfaces.UserRepositoryInterface) *UserController 
 	}
 }
 
-func (ctrl UserController) GetUsers(c *gin.Context) {
+func (ctrl UserController) GetUsers(w http.ResponseWriter, r *http.Request) {
 	users, err := ctrl.Repo.GetUser()
 	if err != nil {
 		if errors.Is(err, repository.ErrRecordNotFound) {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Users not found"})
+			http.Error(w, "Users not found", http.StatusNotFound)
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error retrieving users"})
+			http.Error(w, "Error retrieving users", http.StatusInternalServerError)
 		}
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, users)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(users)
 }
 
-func (ctrl UserController) UpdateUser(c *gin.Context) {
-	username := c.PostForm("username")
-	password := c.PostForm("password")
-	user, err := ctrl.Repo.GetUser()
-	if err != nil {
-		c.JSON(http.StatusForbidden, gin.H{"error": "User not found."})
-		return
-	}
+// func (ctrl UserController) UpdateUser(w http.ResponseWriter, r *http.Request) {
+// 	if err := r.ParseForm(); err != nil {
+// 		http.Error(w, "Error parsing form data", http.StatusBadRequest)
+// 		return
+// 	}
 
-	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error hashing password"})
-		return
-	}
+// 	username := r.FormValue("username")
+// 	password := r.FormValue("password")
 
-	user.Username = username
-	user.Password = string(passwordHash)
-	if err := ctrl.Repo.UpdateUser(user); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error updating user"})
-		return
-	}
+// 	user, err := ctrl.Repo.GetUser()
+// 	if err != nil {
+// 		http.Error(w, "User not found", http.StatusForbidden)
+// 		return
+// 	}
 
-	c.IndentedJSON(http.StatusOK, user)
-}
+// 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+// 	if err != nil {
+// 		http.Error(w, "Error hashing password", http.StatusInternalServerError)
+// 		return
+// 	}
+
+// 	user.Username = username
+// 	user.Password = string(hashedPassword)
+
+// 	if err := ctrl.Repo.UpdateUser(user); err != nil {
+// 		http.Error(w, "Error updating user", http.StatusInternalServerError)
+// 		return
+// 	}
+
+// 	w.Header().Set("Content-Type", "application/json")
+// 	json.NewEncoder(w).Encode(user)
+// }

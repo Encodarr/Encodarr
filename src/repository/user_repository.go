@@ -29,7 +29,3 @@ func (repo *UserRepository) GetUser() (models.User, error) {
 	}
 	return user, nil
 }
-
-func (repo *UserRepository) UpdateUser(user models.User) error {
-	return repo.DB.Save(user).Error
-}

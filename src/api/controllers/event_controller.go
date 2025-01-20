@@ -1,13 +1,12 @@
 package controllers
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"transfigurr/interfaces"
 	"transfigurr/models"
 	"transfigurr/repository"
-
-	"github.com/gin-gonic/gin"
 )
 
 type EventController struct {
@@ -20,26 +19,24 @@ func NewEventController(repo interfaces.EventRepositoryInterface) *EventControll
 	}
 }
 
-func (ctrl EventController) GetEvents(c *gin.Context) {
+func (ctrl EventController) GetEvents(w http.ResponseWriter, r *http.Request) {
 	events, err := ctrl.Repo.GetEvents()
 	if err != nil {
 		if errors.Is(err, repository.ErrRecordNotFound) {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Events not found"})
+			http.Error(w, "Events not found", http.StatusNotFound)
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error retrieving events"})
+			http.Error(w, "Error retrieving events", http.StatusInternalServerError)
 		}
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, events)
+	json.NewEncoder(w).Encode(events)
 }
 
-func (ctrl EventController) UpsertEvent(c *gin.Context) {
+func (ctrl EventController) UpsertEvent(w http.ResponseWriter, r *http.Request, eventId string) {
 	var inputEvent models.Event
-	eventId := c.Param("eventId")
-
-	if err := c.ShouldBindJSON(&inputEvent); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+	if err := json.NewDecoder(r.Body).Decode(&inputEvent); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
@@ -47,45 +44,43 @@ func (ctrl EventController) UpsertEvent(c *gin.Context) {
 	if err != nil && errors.Is(err, repository.ErrRecordNotFound) {
 		event = inputEvent
 	} else if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error retrieving event"})
+		http.Error(w, "Error retrieving event", http.StatusInternalServerError)
 		return
 	}
 
 	if err := ctrl.Repo.UpsertEventById(event); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error upserting event"})
+		http.Error(w, "Error upserting event", http.StatusInternalServerError)
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, event)
+	json.NewEncoder(w).Encode(event)
 }
 
-func (ctrl EventController) GetEventById(c *gin.Context) {
-	eventId := c.Param("eventId")
+func (ctrl EventController) GetEventById(w http.ResponseWriter, r *http.Request, eventId string) {
 	event, err := ctrl.Repo.GetEventById(eventId)
 	if err != nil {
 		if errors.Is(err, repository.ErrRecordNotFound) {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Event not found"})
+			http.Error(w, "Event not found", http.StatusNotFound)
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error retrieving event"})
+			http.Error(w, "Error retrieving event", http.StatusInternalServerError)
 		}
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, event)
+	json.NewEncoder(w).Encode(event)
 }
 
-func (ctrl EventController) DeleteEventById(c *gin.Context) {
-	eventId := c.Param("eventId")
+func (ctrl EventController) DeleteEventById(w http.ResponseWriter, r *http.Request, eventId string) {
 	event, err := ctrl.Repo.GetEventById(eventId)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Event not found"})
+		http.Error(w, "Event not found", http.StatusNotFound)
 		return
 	}
 
 	if err := ctrl.Repo.DeleteEventById(event); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error deleting event"})
+		http.Error(w, "Error deleting event", http.StatusInternalServerError)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Event deleted successfully"})
+	json.NewEncoder(w).Encode(map[string]string{"message": "Event deleted successfully"})
 }

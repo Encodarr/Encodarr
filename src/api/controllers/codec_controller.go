@@ -1,9 +1,9 @@
 package controllers
 
 import (
+	"encoding/json"
+	"net/http"
 	"transfigurr/interfaces"
-
-	"github.com/gin-gonic/gin"
 )
 
 type CodecController struct {
@@ -16,17 +16,23 @@ func NewCodecController(repo interfaces.CodecRepositoryInterface) *CodecControll
 	}
 }
 
-func (ctrl CodecController) GetCodecs(c *gin.Context) {
+func (ctrl CodecController) GetCodecs(w http.ResponseWriter, r *http.Request) {
 	codecs := ctrl.Repo.GetCodecs()
-	c.IndentedJSON(200, codecs)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).SetIndent("", "    ")
+	json.NewEncoder(w).Encode(codecs)
 }
 
-func (ctrl CodecController) GetContainers(c *gin.Context) {
+func (ctrl CodecController) GetContainers(w http.ResponseWriter, r *http.Request) {
 	containers := ctrl.Repo.GetContainers()
-	c.IndentedJSON(200, containers)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).SetIndent("", "    ")
+	json.NewEncoder(w).Encode(containers)
 }
 
-func (ctrl CodecController) GetEncoders(c *gin.Context) {
+func (ctrl CodecController) GetEncoders(w http.ResponseWriter, r *http.Request) {
 	encoders := ctrl.Repo.GetEncoders()
-	c.IndentedJSON(200, encoders)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).SetIndent("", "    ")
+	json.NewEncoder(w).Encode(encoders)
 }

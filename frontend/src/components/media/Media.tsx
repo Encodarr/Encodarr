@@ -1,7 +1,7 @@
 import styles from "./Media.module.scss";
 import Footer from "../footer/Footer";
 import { useContext, useState } from "react";
-import { WebSocketContext } from "../../contexts/webSocketContext";
+import { SSEContext } from "../../contexts/webSocketContext";
 import MediaModel from "../modals/mediaModal/MediaModal";
 import Posters from "../posters/Posters";
 import Overviews from "../overviews/Overviews";
@@ -10,18 +10,18 @@ import sortAndFilter from "../../utils/sortAndFilter";
 import MediaTable from "../tables/mediaTable/MediaTable";
 
 const Media = () => {
-  const wsContext = useContext(WebSocketContext);
+  const wsContext: any = useContext(SSEContext);
   const movies = wsContext?.data?.movies;
   const series = wsContext?.data?.series;
   const settings: any = wsContext?.data?.settings
-  ? Object.keys(wsContext?.data?.settings).reduce((acc, key) => {
-      acc[key] = wsContext?.data?.settings[key].value;
-      return acc;
-    }, {})
-  : {};
+    ? Object.keys(wsContext?.data?.settings).reduce((acc, key) => {
+        acc[key] = wsContext?.data?.settings[key].value;
+        return acc;
+      }, {})
+    : {};
   const profiles = wsContext?.data?.profiles;
-  const view = settings?.mediaView
-  const sort = settings?.mediaSort
+  const view = settings?.mediaView;
+  const sort = settings?.mediaSort;
   const filter = settings?.mediaFilter;
   const sortDirection = settings?.mediaSortDirection;
   const sortedMedia = sortAndFilter(
@@ -63,7 +63,11 @@ const Media = () => {
             />
           )}
           {view === "posters" && (
-            <Posters settings={settings} sortedMedia={sortedMedia || []} profiles={profiles} />
+            <Posters
+              settings={settings}
+              sortedMedia={sortedMedia || []}
+              profiles={profiles}
+            />
           )}
           {view === "overview" && (
             <Overviews

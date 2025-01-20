@@ -1,13 +1,12 @@
-// setting_controller.go
 package controllers
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"transfigurr/interfaces"
 	"transfigurr/models"
 
-	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
@@ -21,71 +20,53 @@ func NewSettingController(repo interfaces.SettingRepositoryInterface) *SettingCo
 	}
 }
 
-func (ctrl *SettingController) GetSettings(c *gin.Context) {
+func (ctrl *SettingController) GetSettings(w http.ResponseWriter, r *http.Request) {
 	settings, err := ctrl.Repo.GetAllSettings()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error retrieving settings"})
+		http.Error(w, "Error retrieving settings", http.StatusInternalServerError)
 		return
 	}
-
-	c.IndentedJSON(http.StatusOK, settings)
+	json.NewEncoder(w).Encode(settings)
 }
 
-func (ctrl *SettingController) UpsertSetting(c *gin.Context) {
-	var inputSetting models.Setting
-	settingId := c.Param("settingId")
-
-	if err := c.ShouldBindJSON(&inputSetting); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-		return
-	}
-
-	_, err := ctrl.Repo.GetSettingById(settingId)
-
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		// Throw an error if no setting exists with the provided ID
-		c.JSON(http.StatusNotFound, gin.H{"error": "Setting not found"})
-		return
-	} else if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error retrieving setting"})
-		return
-	} else {
-		// Update the existing setting
-		err = ctrl.Repo.UpdateSetting(inputSetting)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error updating setting"})
-			return
+func (ctrl *SettingController) GetSettingById(w http.ResponseWriter, r *http.Request, settingId string) {
+	setting, err := ctrl.Repo.GetSettingById(settingId)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			http.Error(w, "Setting not found", http.StatusNotFound)
+		} else {
+			http.Error(w, "Error retrieving setting", http.StatusInternalServerError)
 		}
-		c.IndentedJSON(http.StatusOK, inputSetting)
+		return
 	}
+	json.NewEncoder(w).Encode(setting)
 }
 
-func (ctrl *SettingController) GetSettingById(c *gin.Context) {
-	settingId := c.Param("settingId")
-
-	setting, err := ctrl.Repo.GetSettingById(settingId)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error retrieving setting"})
+func (ctrl *SettingController) UpsertSetting(w http.ResponseWriter, r *http.Request, settingId string) {
+	var inputSetting models.Setting
+	if err := json.NewDecoder(r.Body).Decode(&inputSetting); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, setting)
+	err := ctrl.Repo.UpdateSetting(inputSetting)
+	if err != nil {
+		http.Error(w, "Error upserting setting", http.StatusInternalServerError)
+		return
+	}
+	json.NewEncoder(w).Encode(inputSetting)
 }
 
-func (ctrl *SettingController) DeleteSettingById(c *gin.Context) {
-	settingId := c.Param("settingId")
-
-	setting, err := ctrl.Repo.GetSettingById(settingId)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Setting not found"})
+func (ctrl *SettingController) DeleteSettingById(w http.ResponseWriter, r *http.Request, setting string) {
+	var inputSetting models.Setting
+	if err := json.NewDecoder(r.Body).Decode(&inputSetting); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
-
-	err = ctrl.Repo.DeleteSetting(setting)
+	err := ctrl.Repo.DeleteSetting(inputSetting)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error deleting setting"})
+		http.Error(w, "Error deleting setting", http.StatusInternalServerError)
 		return
 	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "Setting deleted successfully"})
+	json.NewEncoder(w).Encode(map[string]string{"message": "Setting deleted successfully"})
 }

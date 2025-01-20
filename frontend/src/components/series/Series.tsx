@@ -8,24 +8,24 @@ import Continuing from "../svgs/play_arrow.svg?react";
 import Ended from "../svgs/stop.svg?react";
 import Network from "../svgs/tower.svg?react";
 import Season from "../season/Season";
-import { WebSocketContext } from "../../contexts/webSocketContext";
+import { SSEContext } from "../../contexts/webSocketContext";
 import SeriesModal from "../modals/seriesModal/SeriesModal";
 import SeriesToolbar from "../toolbars/seriesToolbar/SeriesToolbar";
 import { formatSize } from "../../utils/format";
 import FolderIcon from "../svgs/folder.svg?react";
 
 const Series = ({ seriesName }: any) => {
-  const wsContext = useContext(WebSocketContext);
+  const wsContext: any = useContext(SSEContext);
   const profiles = wsContext?.data?.profiles;
-  const series: any = 
-  wsContext?.data?.series && profiles
-    ? wsContext?.data?.series.find((s: any) => s.id === seriesName)
-    : {};
+  const series: any =
+    wsContext?.data?.series && profiles
+      ? wsContext?.data?.series.find((s: any) => s.id === seriesName)
+      : {};
   const system: any = wsContext?.data?.system
     ? Object.keys(wsContext?.data?.system).reduce((acc, key) => {
-      acc[key] = wsContext?.data?.system[key].value;
-      return acc;
-    }, {})
+        acc[key] = wsContext?.data?.system[key].value;
+        return acc;
+      }, {})
     : {};
   const [content, setContent] = useState<any>({});
   const handleEditClick = () => {
@@ -95,7 +95,9 @@ const Series = ({ seriesName }: any) => {
     }
   }, [series?.id]);
 
-  const profileName = profiles?.find((profile: any) => profile.id === series?.profileId)?.name || "";
+  const profileName =
+    profiles?.find((profile: any) => profile.id === series?.profileId)?.name ||
+    "";
   return (
     <div className={styles.series}>
       <SeriesToolbar

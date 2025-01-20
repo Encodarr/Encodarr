@@ -447,42 +447,38 @@ func createFFmpegCommand(inputFile string, outputFile string, profile models.Pro
 	return command
 }
 
-// moveOutputFile moves the outputFile to the directory of the inputFile and deletes the inputFile.
 func moveOutputFile(inputFile, outputFile string) error {
-	// Check if the input file exists
-	if _, err := os.Stat(inputFile); os.IsNotExist(err) {
-		return fmt.Errorf("input file does not exist: %s", inputFile)
-	}
-
-	// Check if the output file exists
-	if _, err := os.Stat(outputFile); os.IsNotExist(err) {
-		return fmt.Errorf("output file does not exist: %s", outputFile)
-	}
-
 	// Get the directory of the input file
 	inputFileDir := filepath.Dir(inputFile)
-
-	// Construct the new path for the output file
 	newOutputFilePath := filepath.Join(inputFileDir, filepath.Base(outputFile))
 
-	// Log the paths for debugging
-	fmt.Printf("Moving output file from %s to %s\n", outputFile, newOutputFilePath)
+	// Create source file handle
+	source, err := os.Open(outputFile)
+	if err != nil {
+		return fmt.Errorf("failed to open source file: %v", err)
+	}
+	defer source.Close()
 
-	// Move the output file to the new path
-	if err := os.Rename(outputFile, newOutputFilePath); err != nil {
-		return fmt.Errorf("failed to move output file: %v", err)
+	// Create destination file handle
+	destination, err := os.Create(newOutputFilePath)
+	if err != nil {
+		return fmt.Errorf("failed to create destination file: %v", err)
+	}
+	defer destination.Close()
+
+	// Copy the contents
+	if _, err := io.Copy(destination, source); err != nil {
+		return fmt.Errorf("failed to copy file contents: %v", err)
 	}
 
-	// Log the successful move
-	fmt.Printf("Successfully moved output file to %s\n", newOutputFilePath)
+	// Close files before removing
+	source.Close()
+	destination.Close()
 
-	// // Delete the input file
-	// if err := os.Remove(inputFile); err != nil {
-	// 	return fmt.Errorf("failed to delete input file: %v", err)
-	// }
-
-	// // Log the successful deletion
-	// fmt.Printf("Successfully deleted input file %s\n", inputFile)
+	// Remove the original output file
+	if err := os.Remove(outputFile); err != nil {
+		return fmt.Errorf("failed to remove source file: %v", err)
+	}
 
 	return nil
 }

@@ -1,16 +1,16 @@
 package tasks
 
 import (
+	"log"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"syscall"
 	"transfigurr/constants"
 	"transfigurr/interfaces"
 	"transfigurr/models"
 	"transfigurr/utils"
-
-	"github.com/shirou/gopsutil/disk"
 )
 
 var (
@@ -238,11 +238,14 @@ func ScanSeries(encodeService interfaces.EncodeServiceInterface, seriesID string
 }
 
 func getDiskSpace(path string) (uint64, uint64, error) {
-	usage, err := disk.Usage(path)
+	var stat syscall.Statfs_t
+	err := syscall.Statfs(path, &stat)
 	if err != nil {
 		return 0, 0, err
 	}
-	return usage.Free, usage.Total, nil
+	free := stat.Bavail * uint64(stat.Bsize)
+	total := stat.Blocks * uint64(stat.Bsize)
+	return free, total, nil
 }
 
 func ScanSystem(seriesRepo interfaces.SeriesRepositoryInterface, systemRepo interfaces.SystemRepositoryInterface) {
@@ -264,20 +267,24 @@ func ScanSystem(seriesRepo interfaces.SeriesRepositoryInterface, systemRepo inte
 
 	seriesFreeSpace, seriesTotalSpace, err := getDiskSpace(constants.SeriesPath)
 	if err != nil {
+		log.Print("seriesDisk", err)
 		return
 	}
 
 	moviesFreeSpace, moviesTotalSpace, err := getDiskSpace(constants.MoviesPath)
 	if err != nil {
+		log.Print("moviesDisk", err)
 		return
 	}
 	configFreeSpace, configTotalSpace, err := getDiskSpace(constants.ConfigPath)
 	if err != nil {
+		log.Print("configDisk", err)
 		return
 	}
 	transcodeFreeSpace, transcodeTotalSpace, err := getDiskSpace(constants.TranscodeFolder)
 
 	if err != nil {
+		log.Print("transDisk", err)
 		return
 	}
 

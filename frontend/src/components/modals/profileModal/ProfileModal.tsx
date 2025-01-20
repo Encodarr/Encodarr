@@ -1,7 +1,7 @@
 import { useContext, useState } from "react";
-import { WebSocketContext } from "../../../contexts/webSocketContext";
 import ProfileEditor from "../../profileEditor/ProfileEditor";
 import Modal from "../../modal/Modal";
+import { SSEContext } from "../../../contexts/webSocketContext";
 
 const ProfileModal = ({
   isOpen,
@@ -13,13 +13,13 @@ const ProfileModal = ({
   content,
   setContent,
 }: any) => {
-  const wsContext = useContext(WebSocketContext);
+  const wsContext: any = useContext(SSEContext);
   const settings: any = wsContext?.data?.settings
-  ? Object.keys(wsContext?.data?.settings).reduce((acc, id) => {
-      acc[id] = wsContext?.data?.settings[id].value;
-      return acc;
-    }, {})
-  : {};
+    ? Object.keys(wsContext?.data?.settings).reduce((acc, id) => {
+        acc[id] = wsContext?.data?.settings[id].value;
+        return acc;
+      }, {})
+    : {};
   const codecs: any = wsContext?.data?.codecs;
   const containers: any = wsContext?.data?.containers;
   const encoders: any = wsContext?.data?.encoders;

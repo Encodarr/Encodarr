@@ -1,16 +1,33 @@
 package routes
 
 import (
+	"net/http"
+	"strings"
 	"transfigurr/api/controllers"
 	"transfigurr/interfaces"
-
-	"github.com/gin-gonic/gin"
 )
 
-func MovieRoutes(rg *gin.RouterGroup, movieRepo interfaces.MovieRepositoryInterface) {
-	controller := controllers.NewMovieController(movieRepo)
-	rg.GET("/movies", controller.GetMovies)
-	rg.GET("/movies/:movieId", controller.GetMovieByID)
-	rg.PUT("/movies/:movieId", controller.UpsertMovie)
-	rg.DELETE("/movies/:movieId", controller.DeleteMovieByID)
+func HandleMovies(scanService interfaces.ScanServiceInterface, movieRepo interfaces.MovieRepositoryInterface) http.HandlerFunc {
+	controller := controllers.NewMovieController(movieRepo, scanService)
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		// Parse URL path
+		path := strings.TrimPrefix(r.URL.Path, "/api/movies/")
+		segments := strings.Split(strings.Trim(path, "/"), "/")
+
+		switch {
+		case r.Method == http.MethodGet && len(segments) == 1 && segments[0] == "":
+			controller.GetMovies(w, r)
+		case r.Method == http.MethodGet && len(segments) == 1:
+			controller.GetMovieByID(w, r, segments[0])
+		case r.Method == http.MethodPut && len(segments) == 1:
+			controller.UpsertMovie(w, r, segments[0])
+		case r.Method == http.MethodDelete && len(segments) == 1:
+			controller.DeleteMovieByID(w, r, segments[0])
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
 }

@@ -1,13 +1,12 @@
 package controllers
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"transfigurr/interfaces"
 	"transfigurr/models"
 	"transfigurr/repository"
-
-	"github.com/gin-gonic/gin"
 )
 
 type HistoryController struct {
@@ -20,72 +19,66 @@ func NewHistoryController(repo interfaces.HistoryRepositoryInterface) *HistoryCo
 	}
 }
 
-func (ctrl HistoryController) GetHistories(c *gin.Context) {
+func (ctrl HistoryController) GetHistories(w http.ResponseWriter, r *http.Request) {
 	histories, err := ctrl.Repo.GetHistories()
 	if err != nil {
 		if errors.Is(err, repository.ErrRecordNotFound) {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Histories not found"})
+			http.Error(w, "Histories not found", http.StatusNotFound)
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error retrieving histories"})
+			http.Error(w, "Error retrieving histories", http.StatusInternalServerError)
 		}
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, histories)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(histories)
 }
 
-func (ctrl HistoryController) UpsertHistory(c *gin.Context) {
-	var inputHistory models.History
-	historyId := c.Param("historyId")
-
-	if err := c.ShouldBindJSON(&inputHistory); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-		return
-	}
-
-	history, err := ctrl.Repo.GetHistoryById(historyId)
-	if err != nil && errors.Is(err, repository.ErrRecordNotFound) {
-		history = inputHistory
-	} else if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error retrieving history"})
-		return
-	}
-
-	if err := ctrl.Repo.UpsertHistoryById(&history); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error upserting history"})
-		return
-	}
-
-	c.IndentedJSON(http.StatusOK, history)
-}
-
-func (ctrl HistoryController) GetHistoryById(c *gin.Context) {
-	historyId := c.Param("historyId")
+func (ctrl HistoryController) GetHistoryById(w http.ResponseWriter, r *http.Request, historyId string) {
 	history, err := ctrl.Repo.GetHistoryById(historyId)
 	if err != nil {
 		if errors.Is(err, repository.ErrRecordNotFound) {
-			c.JSON(http.StatusNotFound, gin.H{"error": "History not found"})
+			http.Error(w, "History not found", http.StatusNotFound)
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error retrieving history"})
+			http.Error(w, "Error retrieving history", http.StatusInternalServerError)
 		}
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, history)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(history)
 }
 
-func (ctrl HistoryController) DeleteHistoryById(c *gin.Context) {
-	historyId := c.Param("historyId")
-	history, err := ctrl.Repo.GetHistoryById(historyId)
+func (ctrl HistoryController) UpsertHistory(w http.ResponseWriter, r *http.Request, historyId string) {
+	var inputHistory models.History
+	if err := json.NewDecoder(r.Body).Decode(&inputHistory); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	err := ctrl.Repo.UpsertHistoryById(&inputHistory)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "History not found"})
+		http.Error(w, "Error upserting history", http.StatusInternalServerError)
 		return
 	}
 
-	if err := ctrl.Repo.DeleteHistoryById(&history); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error deleting history"})
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(inputHistory)
+}
+
+func (ctrl HistoryController) DeleteHistoryById(w http.ResponseWriter, r *http.Request, historyId string) {
+	var inputHistory models.History
+	if err := json.NewDecoder(r.Body).Decode(&inputHistory); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "History deleted successfully"})
+	err := ctrl.Repo.DeleteHistoryById(&inputHistory)
+	if err != nil {
+		http.Error(w, "Error deleting history", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"message": "History deleted successfully"})
 }

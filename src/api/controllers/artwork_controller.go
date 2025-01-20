@@ -5,8 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"transfigurr/constants"
-
-	"github.com/gin-gonic/gin"
 )
 
 type ArtworkController struct{}
@@ -15,42 +13,38 @@ func NewArtworkController() *ArtworkController {
 	return &ArtworkController{}
 }
 
-func (a *ArtworkController) GetSeriesBackdrop(c *gin.Context) {
-	seriesId := c.Param("seriesId")
+func (a *ArtworkController) GetSeriesBackdrop(w http.ResponseWriter, r *http.Request, seriesId string) {
 	filePath := filepath.Join(constants.ArtworkPath, "series", seriesId, "backdrop.webp")
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		c.JSON(http.StatusNotFound, gin.H{"detail": "Backdrop not found"})
+		http.Error(w, "Backdrop not found", http.StatusNotFound)
 		return
 	}
-	c.File(filePath)
+	http.ServeFile(w, r, filePath)
 }
 
-func (a *ArtworkController) GetSeriesPoster(c *gin.Context) {
-	seriesId := c.Param("seriesId")
+func (a *ArtworkController) GetSeriesPoster(w http.ResponseWriter, r *http.Request, seriesId string) {
 	filePath := filepath.Join(constants.ArtworkPath, "series", seriesId, "poster.webp")
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		c.JSON(http.StatusNotFound, gin.H{"detail": "Poster not found"})
+		http.Error(w, "Poster not found", http.StatusNotFound)
 		return
 	}
-	c.File(filePath)
+	http.ServeFile(w, r, filePath)
 }
 
-func (a *ArtworkController) GetMovieBackdrop(c *gin.Context) {
-	movieId := c.Param("movieId")
+func (a *ArtworkController) GetMovieBackdrop(w http.ResponseWriter, r *http.Request, movieId string) {
 	filePath := filepath.Join(constants.ArtworkPath, "movies", movieId, "backdrop.webp")
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		c.JSON(http.StatusNotFound, gin.H{"detail": "Backdrop not found"})
+		http.Error(w, "Backdrop not found", http.StatusNotFound)
 		return
 	}
-	c.File(filePath)
+	http.ServeFile(w, r, filePath)
 }
 
-func (a *ArtworkController) GetMoviePoster(c *gin.Context) {
-	movieId := c.Param("movieId")
+func (a *ArtworkController) GetMoviePoster(w http.ResponseWriter, r *http.Request, movieId string) {
 	filePath := filepath.Join(constants.ArtworkPath, "movies", movieId, "poster.webp")
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		c.JSON(http.StatusNotFound, gin.H{"detail": "Poster not found"})
+		http.Error(w, "Poster not found", http.StatusNotFound)
 		return
 	}
-	c.File(filePath)
+	http.ServeFile(w, r, filePath)
 }

@@ -1,83 +1,79 @@
 package controllers
 
 import (
-	"bytes"
-	"io/ioutil"
+	"encoding/json"
+	"io"
 	"net/http"
 	"transfigurr/interfaces"
 	"transfigurr/models"
-
-	"github.com/gin-gonic/gin"
 )
 
 type SeriesController struct {
-	Repo interfaces.SeriesRepositoryInterface
+	Repo        interfaces.SeriesRepositoryInterface
+	ScanService interfaces.ScanServiceInterface
 }
 
-func NewSeriesController(repo interfaces.SeriesRepositoryInterface) *SeriesController {
+func NewSeriesController(repo interfaces.SeriesRepositoryInterface, scanService interfaces.ScanServiceInterface) *SeriesController {
 	return &SeriesController{
-		Repo: repo,
+		Repo:        repo,
+		ScanService: scanService,
 	}
 }
 
-func (ctrl *SeriesController) GetSeries(c *gin.Context) {
+func (ctrl *SeriesController) GetSeries(w http.ResponseWriter, r *http.Request) {
 	seriesList, err := ctrl.Repo.GetSeries()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error retrieving series"})
+		http.Error(w, "Error retrieving series", http.StatusInternalServerError)
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, seriesList)
+	json.NewEncoder(w).Encode(seriesList)
 }
 
-func (ctrl *SeriesController) UpsertSeries(c *gin.Context) {
+func (ctrl *SeriesController) UpsertSeries(w http.ResponseWriter, r *http.Request, id string) {
 	var inputSeries models.Series
-	id := c.Param("seriesId")
 
-	// Log the incoming request body for debugging
-	body, err := ioutil.ReadAll(c.Request.Body)
+	// Read the request body
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error reading request body"})
+		http.Error(w, "Error reading request body", http.StatusInternalServerError)
 		return
 	}
+	defer r.Body.Close()
 
-	// Reset the request body so it can be read again by ShouldBindJSON
-	c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(body))
-
-	if err := c.ShouldBindJSON(&inputSeries); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+	// Parse JSON body
+	if err := json.Unmarshal(body, &inputSeries); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
 	series, err := ctrl.Repo.UpsertSeries(id, inputSeries)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error upserting series"})
+		http.Error(w, "Error upserting series", http.StatusInternalServerError)
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, series)
+	ctrl.ScanService.Enqueue(models.Item{Id: series.Id, Type: "series"})
+	json.NewEncoder(w).Encode(series)
 }
 
-func (ctrl *SeriesController) GetSeriesByID(c *gin.Context) {
-	id := c.Param("seriesId")
-
+func (ctrl *SeriesController) GetSeriesByID(w http.ResponseWriter, r *http.Request, id string) {
 	series, err := ctrl.Repo.GetSeriesByID(id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error retrieving series"})
+		http.Error(w, "Error retrieving series", http.StatusInternalServerError)
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, series)
+	json.NewEncoder(w).Encode(series)
 }
 
-func (ctrl *SeriesController) DeleteSeriesByID(c *gin.Context) {
-	id := c.Param("seriesId")
-
+func (ctrl *SeriesController) DeleteSeriesByID(w http.ResponseWriter, r *http.Request, id string) {
 	err := ctrl.Repo.DeleteSeriesByID(id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error deleting series"})
+		http.Error(w, "Error deleting series", http.StatusInternalServerError)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Series deleted successfully"})
+	response := map[string]string{"message": "Series deleted successfully"}
+	json.NewEncoder(w).Encode(response)
 }

@@ -1,96 +1,78 @@
 package controllers
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 	"transfigurr/interfaces"
 	"transfigurr/models"
-
-	"github.com/gin-gonic/gin"
 )
 
 type SeasonController struct {
-	Repo interfaces.SeasonRepositoryInterface
+	seasonRepo  interfaces.SeasonRepositoryInterface
+	scanService interfaces.ScanServiceInterface
 }
 
-func NewSeasonController(repo interfaces.SeasonRepositoryInterface) *SeasonController {
+func NewSeasonController(seasonRepo interfaces.SeasonRepositoryInterface, scanService interfaces.ScanServiceInterface) *SeasonController {
 	return &SeasonController{
-		Repo: repo,
+		seasonRepo:  seasonRepo,
+		scanService: scanService,
 	}
 }
 
-func (ctrl *SeasonController) GetSeasons(c *gin.Context) {
-	seriesId := c.Param("seriesId")
-
-	seasons, err := ctrl.Repo.GetSeasons(seriesId)
+func (c *SeasonController) GetSeasons(w http.ResponseWriter, r *http.Request, seriesId string) {
+	seasons, err := c.seasonRepo.GetSeasons(seriesId)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error retrieving seasons"})
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	c.IndentedJSON(http.StatusOK, seasons)
+	json.NewEncoder(w).Encode(seasons)
 }
 
-func (ctrl *SeasonController) UpsertSeason(c *gin.Context) {
-	var inputSeason models.Season
-	seriesId := c.Param("seriesId")
-	seasonNumber := c.Param("seasonNumber")
-
-	seasonNum, err := strconv.Atoi(seasonNumber)
+func (c *SeasonController) GetSeasonByID(w http.ResponseWriter, r *http.Request, seriesId string, seasonNumberString string) {
+	seasonNumber, err := strconv.Atoi(seasonNumberString)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid season number"})
+		http.Error(w, "Invalid season number", http.StatusBadRequest)
 		return
 	}
-
-	if err := c.ShouldBindJSON(&inputSeason); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-		return
-	}
-
-	season, err := ctrl.Repo.UpsertSeason(seriesId, seasonNum, inputSeason)
+	season, err := c.seasonRepo.GetSeasonById(seriesId, seasonNumber)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error upserting season"})
+		http.Error(w, "Season not found", http.StatusNotFound)
 		return
 	}
-
-	c.IndentedJSON(http.StatusOK, season)
+	json.NewEncoder(w).Encode(season)
 }
 
-func (ctrl *SeasonController) GetSeasonById(c *gin.Context) {
-	seriesId := c.Param("seriesId")
-	seasonNumber := c.Param("seasonNumber")
-
-	seasonNum, err := strconv.Atoi(seasonNumber)
-
+func (c *SeasonController) UpsertSeason(w http.ResponseWriter, r *http.Request, seriesId string, seasonNumberString string) {
+	var season models.Season
+	seasonNum, err := strconv.Atoi(seasonNumberString)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid season number"})
+		http.Error(w, "Invalid season number", http.StatusBadRequest)
+		return
+	}
+	if err := json.NewDecoder(r.Body).Decode(&season); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	season, err := ctrl.Repo.GetSeasonById(seriesId, seasonNum)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error retrieving season"})
+	if _, err := c.seasonRepo.UpsertSeason(string(seriesId), seasonNum, season); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, season)
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(season)
 }
 
-func (ctrl *SeasonController) DeleteSeasonById(c *gin.Context) {
-	seriesId := c.Param("seriesId")
-	seasonNumber := c.Param("seasonNumber")
-
-	seasonNum, err := strconv.Atoi(seasonNumber)
+func (c *SeasonController) DeleteSeasonByID(w http.ResponseWriter, r *http.Request, seriesId string, seasonNumberString string) {
+	seasonNumber, err := strconv.Atoi(seasonNumberString)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid season number"})
+		http.Error(w, "Invalid season number", http.StatusBadRequest)
 		return
 	}
-
-	err = ctrl.Repo.DeleteSeasonById(seriesId, seasonNum)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error deleting season"})
+	if err := c.seasonRepo.DeleteSeasonById(seriesId, seasonNumber); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "Season deleted successfully"})
+	w.WriteHeader(http.StatusNoContent)
 }

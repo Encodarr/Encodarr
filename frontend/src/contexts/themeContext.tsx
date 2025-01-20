@@ -1,9 +1,9 @@
 import { useState, useEffect, useContext, useRef } from "react";
-import { WebSocketContext } from "./webSocketContext";
 import { createContext } from "react";
+import { SSEContext } from "./webSocketContext";
 export const ThemeContext = createContext<any>(undefined);
 export function ThemeProvider({ children }: any) {
-  const wsContext: any = useContext(WebSocketContext);
+  const wsContext: any = useContext(SSEContext);
   const [theme, setTheme] = useState(null);
   const themeRef = useRef(theme);
   useEffect(() => {

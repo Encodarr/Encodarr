@@ -2,8 +2,11 @@ package services
 
 import (
 	"io/ioutil"
+	"log"
 	"os"
+	"path/filepath"
 	"regexp"
+	"sync"
 	"time"
 	"transfigurr/interfaces"
 	"transfigurr/models"
@@ -12,9 +15,12 @@ import (
 )
 
 type WatchdogHandler struct {
-	mediaType   string
-	watcher     *fsnotify.Watcher
-	scanService interfaces.ScanServiceInterface
+	mediaType    string
+	watcher      *fsnotify.Watcher
+	scanService  interfaces.ScanServiceInterface
+	pollInterval time.Duration
+	dirCache     map[string]time.Time
+	mutex        sync.RWMutex
 }
 
 func NewWatchdogService(scanService interfaces.ScanServiceInterface) *WatchdogHandler {
@@ -22,7 +28,12 @@ func NewWatchdogService(scanService interfaces.ScanServiceInterface) *WatchdogHa
 	if err != nil {
 		return nil
 	}
-	return &WatchdogHandler{watcher: watcher, scanService: scanService}
+	return &WatchdogHandler{
+		watcher:      watcher,
+		scanService:  scanService,
+		pollInterval: 30 * time.Second,
+		dirCache:     make(map[string]time.Time),
+	}
 }
 
 func (w *WatchdogHandler) OnCreated(path string) {
@@ -104,6 +115,7 @@ func (w *WatchdogHandler) watchDirectory(directory string) {
 }
 
 func (w *WatchdogHandler) process(directory, contentType string) {
+	log.Printf("Starting watchdog for %s directory: %s", contentType, directory)
 	w.mediaType = contentType
 	w.watchDirectory(directory)
 
@@ -112,8 +124,11 @@ func (w *WatchdogHandler) process(directory, contentType string) {
 			select {
 			case event, ok := <-w.watcher.Events:
 				if !ok {
+					log.Println("[ERROR] Event channel closed")
 					return
 				}
+				log.Printf("Received event: %s for %s", event.Op, event.Name)
+
 				switch event.Op {
 				case fsnotify.Create:
 					w.OnCreated(event.Name)
@@ -121,12 +136,13 @@ func (w *WatchdogHandler) process(directory, contentType string) {
 					w.OnDeleted(event.Name)
 				case fsnotify.Write:
 					w.OnModified(event.Name)
-				default:
 				}
-			case _, ok := <-w.watcher.Errors:
+			case err, ok := <-w.watcher.Errors:
 				if !ok {
+					log.Println("[ERROR] Error channel closed")
 					return
 				}
+				log.Printf("[ERROR] Watcher error: %v", err)
 			}
 		}
 	}()
@@ -168,6 +184,45 @@ func isDirectory(path string) bool {
 	return fileInfo.IsDir()
 }
 
+func (w *WatchdogHandler) startPolling(directory string) {
+	ticker := time.NewTicker(w.pollInterval)
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				w.pollDirectory(directory)
+			}
+		}
+	}()
+}
+
+func (w *WatchdogHandler) pollDirectory(directory string) {
+	err := filepath.Walk(directory, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		w.mutex.Lock()
+		lastMod, exists := w.dirCache[path]
+		currentMod := info.ModTime()
+		w.dirCache[path] = currentMod
+		w.mutex.Unlock()
+
+		if !exists {
+			w.OnCreated(path)
+		} else if currentMod.After(lastMod) {
+			w.OnModified(path)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		log.Printf("[ERROR] Polling error: %v", err)
+	}
+}
+
 func (w *WatchdogHandler) Startup(directory, contentType string) {
-	go w.process(directory, contentType)
+	w.startPolling(directory)            // Start polling
+	go w.process(directory, contentType) // Keep existing fsnotify
 }

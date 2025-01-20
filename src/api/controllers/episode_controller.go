@@ -1,12 +1,11 @@
 package controllers
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 	"transfigurr/interfaces"
 	"transfigurr/models"
-
-	"github.com/gin-gonic/gin"
 )
 
 type EpisodeController struct {
@@ -19,106 +18,92 @@ func NewEpisodeController(repo interfaces.EpisodeRepositoryInterface) *EpisodeCo
 	}
 }
 
-func (ctrl *EpisodeController) GetEpisodes(c *gin.Context) {
-	seriesId := c.Param("seriesId")
-	seasonNumber := c.Param("seasonNumber")
-
+func (ctrl *EpisodeController) GetEpisodes(w http.ResponseWriter, r *http.Request, seriesId string, seasonNumber string) {
 	seasonNum, err := strconv.Atoi(seasonNumber)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid season number"})
+		http.Error(w, "Invalid season number", http.StatusBadRequest)
 		return
 	}
 
 	episodes, err := ctrl.Repo.GetEpisodes(seriesId, seasonNum)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error retrieving episodes"})
+		http.Error(w, "Error retrieving episodes", http.StatusInternalServerError)
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, episodes)
+	json.NewEncoder(w).Encode(episodes)
 }
 
-func (ctrl *EpisodeController) UpsertEpisode(c *gin.Context) {
+func (ctrl *EpisodeController) UpsertEpisode(w http.ResponseWriter, r *http.Request, seriesId string, seasonNumber string, episodeNumber string) {
 	var inputEpisode models.Episode
-	seriesId := c.Param("seriesId")
-	seasonNumber := c.Param("seasonNumber")
-	episodeNumber := c.Param("episodeNumber")
 
 	seasonNum, err := strconv.Atoi(seasonNumber)
-
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid season number"})
+		http.Error(w, "Invalid season number", http.StatusBadRequest)
 		return
 	}
 
 	episodeNum, err := strconv.Atoi(episodeNumber)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid episode number"})
+		http.Error(w, "Invalid episode number", http.StatusBadRequest)
 		return
 	}
 
-	if err := c.ShouldBindJSON(&inputEpisode); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+	if err := json.NewDecoder(r.Body).Decode(&inputEpisode); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
 	episode, err := ctrl.Repo.UpsertEpisode(seriesId, seasonNum, episodeNum, inputEpisode)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error upserting episode"})
+		http.Error(w, "Error upserting episode", http.StatusInternalServerError)
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, episode)
+	json.NewEncoder(w).Encode(episode)
 }
 
-func (ctrl *EpisodeController) GetEpisodeBySeriesSeasonEpisode(c *gin.Context) {
-	seriesId := c.Param("seriesId")
-	seasonNumber := c.Param("seasonNumber")
-	episodeNumber := c.Param("episodeNumber")
-
+func (ctrl *EpisodeController) GetEpisodeBySeriesSeasonEpisode(w http.ResponseWriter, r *http.Request, seriesId string, seasonNumber string, episodeNumber string) {
 	seasonNum, err := strconv.Atoi(seasonNumber)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid season number"})
+		http.Error(w, "Invalid season number", http.StatusBadRequest)
 		return
 	}
 
 	episodeNum, err := strconv.Atoi(episodeNumber)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid episode number"})
+		http.Error(w, "Invalid episode number", http.StatusBadRequest)
 		return
 	}
 
 	episode, err := ctrl.Repo.GetEpisodeBySeriesSeasonEpisode(seriesId, seasonNum, episodeNum)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error retrieving episode"})
+		http.Error(w, "Error retrieving episode", http.StatusInternalServerError)
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, episode)
+	json.NewEncoder(w).Encode(episode)
 }
 
-func (ctrl *EpisodeController) DeleteEpisodeById(c *gin.Context) {
-	seriesId := c.Param("seriesId")
-	seasonNumber := c.Param("seasonNumber")
-	episodeNumber := c.Param("episodeNumber")
-
+func (ctrl *EpisodeController) DeleteEpisodeById(w http.ResponseWriter, r *http.Request, seriesId string, seasonNumber string, episodeNumber string) {
 	seasonNum, err := strconv.Atoi(seasonNumber)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid season number"})
+		http.Error(w, "Invalid season number", http.StatusBadRequest)
 		return
 	}
 
 	episodeNum, err := strconv.Atoi(episodeNumber)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid episode number"})
+		http.Error(w, "Invalid episode number", http.StatusBadRequest)
 		return
 	}
 
 	err = ctrl.Repo.DeleteEpisodeById(seriesId, seasonNum, episodeNum)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error deleting episode"})
+		http.Error(w, "Error deleting episode", http.StatusInternalServerError)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Episode deleted successfully"})
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Episode deleted successfully"})
 }

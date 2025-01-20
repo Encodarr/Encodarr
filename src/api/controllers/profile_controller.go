@@ -1,89 +1,114 @@
 package controllers
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 	"transfigurr/interfaces"
 	"transfigurr/models"
-
-	"github.com/gin-gonic/gin"
 )
 
 type ProfileController struct {
-	Repo interfaces.ProfileRepositoryInterface
+	ProfileRepo interfaces.ProfileRepositoryInterface
+	MovieRepo   interfaces.MovieRepositoryInterface
+	SeriesRepo  interfaces.SeriesRepositoryInterface
+	ScanService interfaces.ScanServiceInterface
 }
 
-func NewProfileController(repo interfaces.ProfileRepositoryInterface) *ProfileController {
+func NewProfileController(scanService interfaces.ScanServiceInterface, profileRepo interfaces.ProfileRepositoryInterface, movieRepo interfaces.MovieRepositoryInterface, seriesRepo interfaces.SeriesRepositoryInterface) *ProfileController {
 	return &ProfileController{
-		Repo: repo,
+		ProfileRepo: profileRepo,
+		MovieRepo:   movieRepo,
+		SeriesRepo:  seriesRepo,
+		ScanService: scanService,
 	}
 }
 
-func (ctrl *ProfileController) GetProfiles(c *gin.Context) {
-	profiles, err := ctrl.Repo.GetAllProfiles()
+func (ctrl *ProfileController) GetProfiles(w http.ResponseWriter, r *http.Request) {
+	profiles, err := ctrl.ProfileRepo.GetAllProfiles()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error retrieving profiles"})
+		http.Error(w, "Error retrieving profiles", http.StatusInternalServerError)
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, profiles)
+	json.NewEncoder(w).Encode(profiles)
 }
 
-func (ctrl *ProfileController) GetProfileById(c *gin.Context) {
-	profileId := c.Param("profileId")
+func (ctrl *ProfileController) GetProfileById(w http.ResponseWriter, r *http.Request, profileId string) {
 	profileIdInt, err := strconv.Atoi(profileId)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid profile ID"})
+		http.Error(w, "Invalid profile ID", http.StatusBadRequest)
 		return
 	}
 
-	profile, err := ctrl.Repo.GetProfileById(profileIdInt)
+	profile, err := ctrl.ProfileRepo.GetProfileById(profileIdInt)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Profile not found"})
+		http.Error(w, "Profile not found", http.StatusNotFound)
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, profile)
+	json.NewEncoder(w).Encode(profile)
 }
 
-func (ctrl *ProfileController) UpsertProfile(c *gin.Context) {
+func (ctrl *ProfileController) UpsertProfile(w http.ResponseWriter, r *http.Request, profileId string) {
 	var inputProfile models.Profile
-	profileId := c.Param("profileId")
 
 	profileIdInt, err := strconv.Atoi(profileId)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid profile ID"})
+		http.Error(w, "Invalid profile ID", http.StatusBadRequest)
 		return
 	}
 
-	if err := c.ShouldBindJSON(&inputProfile); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+	if err := json.NewDecoder(r.Body).Decode(&inputProfile); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	profile, err := ctrl.Repo.UpsertProfile(profileIdInt, inputProfile)
+	profile, err := ctrl.ProfileRepo.UpsertProfile(profileIdInt, inputProfile)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error updating profile"})
+		http.Error(w, "Error updating profile", http.StatusInternalServerError)
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, profile)
+	movies, err := ctrl.MovieRepo.GetMovies()
+	if err != nil {
+		http.Error(w, "Error retrieving movies", http.StatusInternalServerError)
+		return
+	}
+
+	series, err := ctrl.SeriesRepo.GetSeries()
+	if err != nil {
+		http.Error(w, "Error retrieving series", http.StatusInternalServerError)
+		return
+	}
+
+	for _, movie := range movies {
+		if movie.ProfileID == profileIdInt {
+			ctrl.ScanService.Enqueue(models.Item{Id: movie.Id, Type: "movie"})
+		}
+	}
+
+	for _, serie := range series {
+		if serie.ProfileID == profileIdInt {
+			ctrl.ScanService.Enqueue(models.Item{Id: serie.Id, Type: "series"})
+		}
+	}
+
+	json.NewEncoder(w).Encode(profile)
 }
 
-func (ctrl *ProfileController) DeleteProfileById(c *gin.Context) {
-	profileId := c.Param("profileId")
-
+func (ctrl *ProfileController) DeleteProfileById(w http.ResponseWriter, r *http.Request, profileId string) {
 	profileIdInt, err := strconv.Atoi(profileId)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid profile ID"})
+		http.Error(w, "Invalid profile ID", http.StatusBadRequest)
 		return
 	}
 
-	err = ctrl.Repo.DeleteProfileById(profileIdInt)
+	err = ctrl.ProfileRepo.DeleteProfileById(profileIdInt)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Profile not found"})
+		http.Error(w, "Profile not found", http.StatusNotFound)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Profile deleted successfully"})
+	json.NewEncoder(w).Encode(map[string]string{"message": "Profile deleted successfully"})
 }

@@ -1,20 +1,45 @@
 package routes
 
 import (
-	"transfigurr/api/controllers"
-	"transfigurr/interfaces"
-
-	"github.com/gin-gonic/gin"
+    "net/http"
+    "strings"
+    "transfigurr/api/controllers"
+    "transfigurr/interfaces"
 )
 
-func ActionRoutes(rg *gin.RouterGroup, scanService interfaces.ScanServiceInterface, metadataService interfaces.MetadataServiceInterface) {
-	controller := controllers.NewActionController(scanService, metadataService)
-	rg.POST("/actions/restart", controller.Restart)
-	rg.POST("/actions/shutdown", controller.Shutdown)
-	rg.POST("/actions/refresh/metadata", controller.RefreshMetadata)
-	rg.POST("/actions/scan", controller.Scan)
-	rg.POST("/actions/refresh/metadata/series/:series_id", controller.RefreshSeriesMetadata)
-	rg.POST("/actions/scan/series/:series_id", controller.ScanSeries)
-	rg.POST("/actions/refresh/metadata/movies/:movie_id", controller.RefreshMovieMetadata)
-	rg.POST("/actions/scan/movies/:movie_id", controller.ScanMovie)
+func HandleActions(scanService interfaces.ScanServiceInterface, metadataService interfaces.MetadataServiceInterface) http.HandlerFunc {
+    controller := controllers.NewActionController(scanService, metadataService)
+
+    return func(w http.ResponseWriter, r *http.Request) {
+        w.Header().Set("Content-Type", "application/json")
+
+        if r.Method != http.MethodPost {
+            http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+            return
+        }
+
+        path := strings.TrimPrefix(r.URL.Path, "/api/actions/")
+        segments := strings.Split(strings.Trim(path, "/"), "/")
+
+        switch {
+        case len(segments) == 1 && segments[0] == "restart":
+            controller.Restart(w, r)
+        case len(segments) == 1 && segments[0] == "shutdown":
+            controller.Shutdown(w, r)
+        case len(segments) == 2 && segments[0] == "refresh" && segments[1] == "metadata":
+            controller.RefreshMetadata(w, r)
+        case len(segments) == 1 && segments[0] == "scan":
+            controller.Scan(w, r)
+        case len(segments) == 4 && segments[0] == "refresh" && segments[1] == "metadata" && segments[2] == "series":
+            controller.RefreshSeriesMetadata(w, r, segments[3])
+        case len(segments) == 3 && segments[0] == "scan" && segments[1] == "series":
+            controller.ScanSeries(w, r, segments[2])
+        case len(segments) == 4 && segments[0] == "refresh" && segments[1] == "metadata" && segments[2] == "movies":
+            controller.RefreshMovieMetadata(w, r, segments[3])
+        case len(segments) == 3 && segments[0] == "scan" && segments[1] == "movies":
+            controller.ScanMovie(w, r, segments[2])
+        default:
+            http.Error(w, "Not found", http.StatusNotFound)
+        }
+    }
 }

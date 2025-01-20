@@ -3,14 +3,15 @@ package controllers
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"transfigurr/constants"
 	"transfigurr/interfaces"
 	"transfigurr/models"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -32,101 +33,107 @@ func generateSecretKey() (string, error) {
 	return hex.EncodeToString(bytes), nil
 }
 
-func (ctrl *AuthController) GetActivated(c *gin.Context) {
-	_, err := ctrl.Repo.GetUser()
-	if err != nil {
-		c.JSON(200, gin.H{"activated": false})
-		return
-	}
-	c.JSON(200, gin.H{"activated": true})
+func (ctrl *AuthController) GetActivated(w http.ResponseWriter, r *http.Request) {
+	user, err := ctrl.Repo.GetUser()
+	response := map[string]bool{"activated": err == nil && user.Username != "" && user.Password != ""}
+	json.NewEncoder(w).Encode(response)
 }
 
-func (ctrl *AuthController) Register(c *gin.Context) {
-	var user models.User
-	if err := c.ShouldBindJSON(&user); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+func (ctrl *AuthController) Register(w http.ResponseWriter, r *http.Request) {
+	var reqUser models.User
+	if err := json.NewDecoder(r.Body).Decode(&reqUser); err != nil {
+		http.Error(w, "Invalid request", http.StatusBadRequest)
 		return
 	}
 
 	// Check if user already exists
-	_, err := ctrl.Repo.GetUser()
-	if err == nil {
-		c.JSON(http.StatusForbidden, gin.H{"error": "User already registered"})
+	user, err := ctrl.Repo.GetUser()
+	if err == nil && user.Username != "" && user.Password != "" {
+		http.Error(w, "User already registered", http.StatusForbidden)
 		return
 	}
 
 	// Hash the password
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(reqUser.Password), bcrypt.DefaultCost)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
+		http.Error(w, "Failed to hash password", http.StatusInternalServerError)
 		return
 	}
 	user.Password = string(hashedPassword)
-
+	user.Username = string(reqUser.Username)
 	// Create the user
-	if err := ctrl.Repo.CreateUser(&user); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
+	if err := ctrl.Repo.UpdateUser(&user); err != nil {
+		http.Error(w, "Failed to create user", http.StatusInternalServerError)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "User registered successfully"})
+	response := map[string]string{"message": "User registered successfully"}
+	json.NewEncoder(w).Encode(response)
 }
 
-func (ctrl *AuthController) Login(c *gin.Context) {
+func (ctrl *AuthController) Login(w http.ResponseWriter, r *http.Request) {
 	var loginData struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
 	}
 
-	if err := c.ShouldBindJSON(&loginData); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+	if err := json.NewDecoder(r.Body).Decode(&loginData); err != nil {
+		http.Error(w, "Invalid request", http.StatusBadRequest)
 		return
 	}
 
 	user, err := ctrl.Repo.GetUser()
 	if err != nil || user.Username != loginData.Username {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+		log.Println("User not found or username mismatch")
+		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		return
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(loginData.Password))
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+		log.Printf("Login failed for user: %s", loginData.Username)
+		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		return
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"username": loginData.Username,
 	})
+
 	tokenString, err := token.SignedString([]byte(user.Secret))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not generate token"})
+		http.Error(w, "Could not generate token", http.StatusInternalServerError)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"token": tokenString})
+	response := map[string]string{"token": tokenString}
+	json.NewEncoder(w).Encode(response)
 }
 
-func (ctrl *AuthController) LoginToken(c *gin.Context) {
-	tokenString := c.Request.Header.Get("Authorization")
+func (ctrl *AuthController) LoginToken(w http.ResponseWriter, r *http.Request) {
+	tokenString := r.Header.Get("Authorization")
 	user, err := ctrl.Repo.GetUser()
-	if err != nil {
-		c.JSON(http.StatusForbidden, gin.H{"error": "You must register first"})
+	if err != nil && user.Username == "" && user.Password == "" {
+		http.Error(w, "You must register first", http.StatusForbidden)
 		return
 	}
+
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
 		return []byte(user.Secret), nil
 	})
+
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Failed to parse token: " + err.Error()})
+		http.Error(w, "Failed to parse token: "+err.Error(), http.StatusUnauthorized)
 		return
 	}
+
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		c.JSON(http.StatusOK, gin.H{"message": "Welcome " + claims["username"].(string)})
+		response := map[string]string{"message": "Welcome " + claims["username"].(string)}
+		json.NewEncoder(w).Encode(response)
 	} else {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+		http.Error(w, "Invalid token", http.StatusUnauthorized)
 	}
 }

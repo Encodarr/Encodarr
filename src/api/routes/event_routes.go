@@ -1,16 +1,32 @@
 package routes
 
 import (
+	"net/http"
+	"strings"
 	"transfigurr/api/controllers"
 	"transfigurr/interfaces"
-
-	"github.com/gin-gonic/gin"
 )
 
-func EventRoutes(rg *gin.RouterGroup, eventRepo interfaces.EventRepositoryInterface) {
+func HandleEvents(eventRepo interfaces.EventRepositoryInterface) http.HandlerFunc {
 	controller := controllers.NewEventController(eventRepo)
-	rg.GET("/events", controller.GetEvents)
-	rg.GET("/events/:eventId", controller.GetEventById)
-	rg.PUT("/events/:eventId", controller.UpsertEvent)
-	rg.DELETE("/events/:eventId", controller.DeleteEventById)
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		path := strings.TrimPrefix(r.URL.Path, "/api/events/")
+		segments := strings.Split(strings.Trim(path, "/"), "/")
+
+		switch {
+		case r.Method == http.MethodGet && len(segments) == 1 && segments[0] == "":
+			controller.GetEvents(w, r)
+		case r.Method == http.MethodGet && len(segments) == 1:
+			controller.GetEventById(w, r, segments[0])
+		case r.Method == http.MethodPut && len(segments) == 1:
+			controller.UpsertEvent(w, r, segments[0])
+		case r.Method == http.MethodDelete && len(segments) == 1:
+			controller.DeleteEventById(w, r, segments[0])
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
 }

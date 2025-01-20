@@ -5,6 +5,7 @@ import (
 	"sync"
 	"transfigurr/interfaces"
 	"transfigurr/models"
+	"transfigurr/types"
 	"transfigurr/utils"
 )
 
@@ -19,21 +20,10 @@ type EncodeService struct {
 	mu           sync.Mutex
 	cond         *sync.Cond
 	eventService interfaces.EventServiceInterface
-	seriesRepo   interfaces.SeriesRepositoryInterface
-	seasonRepo   interfaces.SeasonRepositoryInterface
-	episodeRepo  interfaces.EpisodeRepositoryInterface
-	movieRepo    interfaces.MovieRepositoryInterface
-	settingRepo  interfaces.SettingRepositoryInterface
-	systemRepo   interfaces.SystemRepositoryInterface
-	profileRepo  interfaces.ProfileRepositoryInterface
-	authRepo     interfaces.AuthRepositoryInterface
-	userRepo     interfaces.UserRepositoryInterface
-	historyRepo  interfaces.HistoryRepositoryInterface
-	eventRepo    interfaces.EventRepositoryInterface
-	codecRepo    interfaces.CodecRepositoryInterface
+	repositories *types.Repositories
 }
 
-func NewEncodeService(eventService interfaces.EventServiceInterface, seriesRepo interfaces.SeriesRepositoryInterface, seasonRepo interfaces.SeasonRepositoryInterface, episodeRepo interfaces.EpisodeRepositoryInterface, movieRepo interfaces.MovieRepositoryInterface, settingRepo interfaces.SettingRepositoryInterface, systemRepo interfaces.SystemRepositoryInterface, profileRepo interfaces.ProfileRepositoryInterface, authRepo interfaces.AuthRepositoryInterface, userRepo interfaces.UserRepositoryInterface, historyRepo interfaces.HistoryRepositoryInterface, eventRepo interfaces.EventRepositoryInterface, codecRepo interfaces.CodecRepositoryInterface) interfaces.EncodeServiceInterface {
+func NewEncodeService(eventService interfaces.EventServiceInterface, repositories *types.Repositories) interfaces.EncodeServiceInterface {
 	service := &EncodeService{
 		encodeQueue:  make([]models.Item, 0),
 		encodeSet:    make(map[string]struct{}),
@@ -43,27 +33,16 @@ func NewEncodeService(eventService interfaces.EventServiceInterface, seriesRepo 
 		queueStatus:  new(string),
 		current:      new(models.Item),
 		eventService: eventService,
-		seriesRepo:   seriesRepo,
-		seasonRepo:   seasonRepo,
-		episodeRepo:  episodeRepo,
-		movieRepo:    movieRepo,
-		settingRepo:  settingRepo,
-		systemRepo:   systemRepo,
-		profileRepo:  profileRepo,
-		authRepo:     authRepo,
-		userRepo:     userRepo,
-		historyRepo:  historyRepo,
-		eventRepo:    eventRepo,
-		codecRepo:    codecRepo,
+		repositories: repositories,
 	}
 	service.cond = sync.NewCond(&service.mu)
 
-	queueStartupState, err := settingRepo.GetSettingById("queueStartupState")
+	queueStartupState, err := repositories.SettingRepo.GetSettingById("queueStartupState")
 	if err != nil {
 		queueStartupState = models.Setting{Value: "inactive"}
 	}
 
-	queueStatus, err := settingRepo.GetSettingById("queueStatus")
+	queueStatus, err := repositories.SettingRepo.GetSettingById("queueStatus")
 	if err != nil {
 		queueStatus = models.Setting{Value: "inactive"}
 	}
@@ -93,7 +72,7 @@ func (s *EncodeService) Enqueue(item models.Item) {
 
 func (s *EncodeService) process() {
 	for {
-		queueStatus, err := s.settingRepo.GetSettingById("queueStatus")
+		queueStatus, err := s.repositories.SettingRepo.GetSettingById("queueStatus")
 		if err != nil {
 			queueStatus = models.Setting{Value: "inactive"}
 		}
@@ -113,10 +92,10 @@ func (s *EncodeService) process() {
 
 func (s *EncodeService) processItem(item models.Item) {
 	if item.Type == "movie" {
-		utils.EncodeMovie(item, s.movieRepo, s.historyRepo, s.settingRepo, s.profileRepo, s.stage, s.progress, s.eta, s.queueStatus, s.current)
+		utils.EncodeMovie(item, s.repositories.MovieRepo, s.repositories.HistoryRepo, s.repositories.SettingRepo, s.repositories.ProfileRepo, s.stage, s.progress, s.eta, s.queueStatus, s.current)
 	}
 	if item.Type == "episode" {
-		utils.EncodeEpisode(item, s.seriesRepo, s.historyRepo, s.episodeRepo, s.settingRepo, s.profileRepo, s.stage, s.progress, s.eta, s.queueStatus, s.current)
+		utils.EncodeEpisode(item, s.repositories.SeriesRepo, s.repositories.HistoryRepo, s.repositories.EpisodeRepo, s.repositories.SettingRepo, s.repositories.ProfileRepo, s.stage, s.progress, s.eta, s.queueStatus, s.current)
 	}
 
 	s.mu.Lock()

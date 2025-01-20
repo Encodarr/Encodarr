@@ -1,77 +1,79 @@
 package controllers
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"transfigurr/interfaces"
 	"transfigurr/models"
 
-	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
 type MovieController struct {
-	Repo interfaces.MovieRepositoryInterface
+	Repo        interfaces.MovieRepositoryInterface
+	ScanService interfaces.ScanServiceInterface
 }
 
-func NewMovieController(repo interfaces.MovieRepositoryInterface) *MovieController {
+func NewMovieController(repo interfaces.MovieRepositoryInterface, scanService interfaces.ScanServiceInterface) *MovieController {
 	return &MovieController{
-		Repo: repo,
+		Repo:        repo,
+		ScanService: scanService,
 	}
 }
 
-func (ctrl *MovieController) GetMovies(c *gin.Context) {
+func (ctrl *MovieController) GetMovies(w http.ResponseWriter, r *http.Request) {
 	movieList, err := ctrl.Repo.GetMovies()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error retrieving movie"})
+		http.Error(w, "Error retrieving movies", http.StatusInternalServerError)
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, movieList)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(movieList)
 }
 
-func (ctrl *MovieController) UpsertMovie(c *gin.Context) {
+func (ctrl *MovieController) UpsertMovie(w http.ResponseWriter, r *http.Request, movieId string) {
 	var inputMovie models.Movie
-	id := c.Param("movieId")
 
-	if err := c.ShouldBindJSON(&inputMovie); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+	if err := json.NewDecoder(r.Body).Decode(&inputMovie); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	movie, err := ctrl.Repo.UpsertMovie(id, inputMovie)
+	movie, err := ctrl.Repo.UpsertMovie(movieId, inputMovie)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error upserting movie"})
+		http.Error(w, "Error upserting movie", http.StatusInternalServerError)
 		return
 	}
+	ctrl.ScanService.Enqueue(models.Item{Id: movie.Id, Type: "movie"})
 
-	c.IndentedJSON(http.StatusOK, movie)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(movie)
 }
 
-func (ctrl *MovieController) GetMovieByID(c *gin.Context) {
-	id := c.Param("movieId")
-
-	movie, err := ctrl.Repo.GetMovieById(id)
+func (ctrl *MovieController) GetMovieByID(w http.ResponseWriter, r *http.Request, movieId string) {
+	movie, err := ctrl.Repo.GetMovieById(movieId)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Movie not found"})
+			http.Error(w, "Movie not found", http.StatusNotFound)
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error retrieving movie"})
+			http.Error(w, "Error retrieving movie", http.StatusInternalServerError)
 		}
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, movie)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(movie)
 }
 
-func (ctrl *MovieController) DeleteMovieByID(c *gin.Context) {
-	id := c.Param("movieId")
-
-	err := ctrl.Repo.DeleteMovieById(id)
+func (ctrl *MovieController) DeleteMovieByID(w http.ResponseWriter, r *http.Request, movieId string) {
+	err := ctrl.Repo.DeleteMovieById(movieId)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error deleting movie"})
+		http.Error(w, "Error deleting movie", http.StatusInternalServerError)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Movie deleted successfully"})
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"message": "Movie deleted successfully"})
 }

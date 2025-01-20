@@ -1,14 +1,28 @@
 package routes
 
 import (
+	"net/http"
+	"strings"
 	"transfigurr/api/controllers"
 	"transfigurr/interfaces"
-
-	"github.com/gin-gonic/gin"
 )
 
-func UserRoutes(rg *gin.RouterGroup, userRepo interfaces.UserRepositoryInterface) {
+func HandleUsers(userRepo interfaces.UserRepositoryInterface) http.HandlerFunc {
 	controller := controllers.NewUserController(userRepo)
-	rg.GET("/user", controller.GetUsers)
-	rg.POST("/user", controller.UpdateUser)
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		path := strings.TrimPrefix(r.URL.Path, "/api/users/")
+		segments := strings.Split(strings.Trim(path, "/"), "/")
+
+		switch {
+		case r.Method == http.MethodGet && len(segments) == 1 && segments[0] == "":
+			controller.GetUsers(w, r)
+		case r.Method == http.MethodPost && len(segments) == 1 && segments[0] == "":
+			//controller.UpdateUser(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
 }

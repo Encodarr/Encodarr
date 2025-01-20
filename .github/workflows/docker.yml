@@ -65,24 +65,32 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-buildx-
 
-      - name: Build and push Docker image
+      - name: Build and push Docker image (amd64)
         run: |
           docker buildx build \
             --platform linux/amd64 \
+            --provenance=true \
+            --sbom=true \
             --push \
             --tag docker.io/${{ env.IMAGE_NAME }}:amd64-${{ steps.set_tag.outputs.tag }} \
             --tag docker.io/${{ env.IMAGE_NAME }}:amd64-${{ env.BRANCH_NAME }} \
             --tag ghcr.io/${{ env.IMAGE_NAME }}:amd64-${{ steps.set_tag.outputs.tag }} \
             --tag ghcr.io/${{ env.IMAGE_NAME }}:amd64-${{ env.BRANCH_NAME }} \
             .
+
+      - name: Build and push Docker image (arm64)
+        run: |
           docker buildx build \
             --platform linux/arm64 \
+            --provenance=true \
+            --sbom=true \
             --push \
             --tag docker.io/${{ env.IMAGE_NAME }}:arm64-${{ steps.set_tag.outputs.tag }} \
             --tag docker.io/${{ env.IMAGE_NAME }}:arm64-${{ env.BRANCH_NAME }} \
             --tag ghcr.io/${{ env.IMAGE_NAME }}:arm64-${{ steps.set_tag.outputs.tag }} \
             --tag ghcr.io/${{ env.IMAGE_NAME }}:arm64-${{ env.BRANCH_NAME }} \
             .
+            
       - name: Create and push Docker manifest
         run: |
 

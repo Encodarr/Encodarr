@@ -1,16 +1,18 @@
 package startup
 
 import (
+	"database/sql"
+	"log"
 	"os"
 	"path/filepath"
 	"time"
 	"transfigurr/constants"
-	"transfigurr/docs"
 	"transfigurr/interfaces"
 	"transfigurr/models"
 	"transfigurr/repository"
 	"transfigurr/services"
 	"transfigurr/tasks"
+	"transfigurr/types"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -52,15 +54,7 @@ func writeUptimeToDB(systemRepo interfaces.SystemRepositoryInterface) error {
 	return nil
 }
 
-func Startup() (db *gorm.DB, scanService interfaces.ScanServiceInterface, encodeService interfaces.EncodeServiceInterface, metadataService interfaces.MetadataServiceInterface, seriesRepo interfaces.SeriesRepositoryInterface, seasonRepo interfaces.SeasonRepositoryInterface, episodeRepo interfaces.EpisodeRepositoryInterface, movieRepo interfaces.MovieRepositoryInterface, settingRepo interfaces.SettingRepositoryInterface, systemRepo interfaces.SystemRepositoryInterface, profileRepo interfaces.ProfileRepositoryInterface, authRepo interfaces.AuthRepositoryInterface, userRepo interfaces.UserRepositoryInterface, historyRepo interfaces.HistoryRepositoryInterface, eventRepo interfaces.EventRepositoryInterface, codecRepo interfaces.CodecRepositoryInterface) {
-
-	// programmatically set swagger info
-	docs.SwaggerInfo.Title = "Swagger Example API"
-	docs.SwaggerInfo.Description = "This is a sample server Petstore server."
-	docs.SwaggerInfo.Version = "1.0"
-	docs.SwaggerInfo.Host = "petstore.swagger.io"
-	docs.SwaggerInfo.BasePath = "/v2"
-	docs.SwaggerInfo.Schemes = []string{"http", "https"}
+func Startup() (sqlDB *sql.DB, servicesContainer *types.Services, repositories *types.Repositories) {
 
 	// Ensure the database path exists
 	if err := ensureDbPathExists(constants.DbPath); err != nil {
@@ -83,36 +77,33 @@ func Startup() (db *gorm.DB, scanService interfaces.ScanServiceInterface, encode
 	SeedDB(db)
 	//db.LogMode(true)
 	// repos
-	seriesRepo = repository.NewSeriesRepository(db)
-	seasonRepo = repository.NewSeasonRepository(db)
-	episodeRepo = repository.NewEpisodeRepository(db)
-	movieRepo = repository.NewMovieRepository(db)
-	settingRepo = repository.NewSettingRepository(db)
-	systemRepo = repository.NewSystemRepository(db)
-	profileRepo = repository.NewProfileRepository(db)
-	authRepo = repository.NewAuthRepository(db)
-	userRepo = repository.NewUserRepository(db)
-	historyRepo = repository.NewHistoryRepository(db)
-	eventRepo = repository.NewEventRepository(db)
-	codecRepo = repository.NewCodecRepository()
+
+	repositories = repository.NewRepositories(db)
 
 	// services
-	eventService := services.NewEventService(eventRepo, 100)
+	eventService := services.NewEventService(repositories.EventRepo, 100)
 	eventService.Startup("debug")
 
-	metadataService = services.NewMetadataService(eventService, seriesRepo, seasonRepo, episodeRepo, movieRepo, settingRepo, systemRepo, profileRepo, authRepo, userRepo, historyRepo, eventRepo, codecRepo)
+	metadataService := services.NewMetadataService(eventService, repositories)
 	metadataService.Startup()
 
-	encodeService = services.NewEncodeService(eventService, seriesRepo, seasonRepo, episodeRepo, movieRepo, settingRepo, systemRepo, profileRepo, authRepo, userRepo, historyRepo, eventRepo, codecRepo)
+	encodeService := services.NewEncodeService(eventService, repositories)
 	encodeService.Startup()
 
-	scanService = services.NewScanService(eventService, metadataService, encodeService, seriesRepo, seasonRepo, episodeRepo, movieRepo, settingRepo, systemRepo, profileRepo, authRepo, userRepo, historyRepo, eventRepo, codecRepo)
+	scanService := services.NewScanService(eventService, metadataService, encodeService, repositories)
 	scanService.Startup()
+
+	// Create and return the service container
+	servicesContainer = &types.Services{
+		ScanService:     scanService,
+		EncodeService:   encodeService,
+		MetadataService: metadataService,
+	}
 
 	currentDir := getParentDir()
 
 	// Write uptime to db
-	if err := writeUptimeToDB(systemRepo); err != nil {
+	if err := writeUptimeToDB(repositories.SystemRepo); err != nil {
 		return
 	}
 
@@ -124,6 +115,12 @@ func Startup() (db *gorm.DB, scanService interfaces.ScanServiceInterface, encode
 	seriesWatchdogService.Startup(filepath.Join(currentDir, "series"), "series")
 
 	// scan system
-	tasks.ScanSystem(seriesRepo, systemRepo)
-	return db, scanService, encodeService, metadataService, seriesRepo, seasonRepo, episodeRepo, movieRepo, settingRepo, systemRepo, profileRepo, authRepo, userRepo, historyRepo, eventRepo, codecRepo
+	tasks.ScanSystem(repositories.SeriesRepo, repositories.SystemRepo)
+
+	sqlDB, err = db.DB()
+	if err != nil {
+		log.Fatalf("failed to get sql.DB from gorm.DB: %v", err)
+	}
+
+	return sqlDB, servicesContainer, repositories
 }

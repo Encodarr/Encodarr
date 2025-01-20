@@ -1,24 +1,40 @@
 # Stage 1: Build the React frontend
-FROM node:alpine as frontend
+FROM node:lts-alpine AS frontend
 WORKDIR /frontend
 COPY frontend/package*.json ./
+
+# Clean npm cache
+RUN npm cache clean --force
+
+# Install dependencies
 RUN npm ci
+
 COPY frontend/ ./
 RUN npm run build
 
-# Stage 2: Build the FastAPI backend
-FROM golang:alpine as backend
+# Stage 2: Build the Go backend with CGO enabled
+FROM golang:1.23-alpine AS backend
 WORKDIR /src
+
+# Install necessary dependencies for CGO
+RUN apk add --no-cache gcc musl-dev
+
 COPY src /src
 RUN go mod download
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
 
+# Enable CGO and build the Go application
+ENV CGO_ENABLED=1
+RUN go build -o main .
 
 # Stage 3: Combine frontend and backend
 FROM alpine:latest
 WORKDIR /
+
+# Install SQLite3 library
+RUN apk add --no-cache sqlite-libs
+
 COPY --from=frontend /frontend/dist /frontend/dist
-COPY --from=backend /src /src
+COPY --from=backend /src/main /src/main
 
 # Stage 4: Install ffmpeg
 RUN apk add --no-cache --update \
@@ -28,11 +44,12 @@ RUN apk add --no-cache --update \
 # Stage 5: Copy the init script and execute
 WORKDIR /
 COPY init /init
-COPY /startup /startup
-
 RUN chmod +x /init
+
 ENV PUID=1000
 ENV PGID=1000
 ENV TZ=America/New_York
 EXPOSE 7889
-CMD ["/init"]
+
+# Use ash to run the init script
+CMD ["/bin/ash", "/init"]

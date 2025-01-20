@@ -1,16 +1,32 @@
 package routes
 
 import (
+	"net/http"
+	"strings"
 	"transfigurr/api/controllers"
 	"transfigurr/interfaces"
-
-	"github.com/gin-gonic/gin"
 )
 
-func SettingRoutes(rg *gin.RouterGroup, settingRepo interfaces.SettingRepositoryInterface) {
+func HandleSettings(settingRepo interfaces.SettingRepositoryInterface) http.HandlerFunc {
 	controller := controllers.NewSettingController(settingRepo)
-	rg.GET("/settings", controller.GetSettings)
-	rg.GET("/settings/:settingId", controller.GetSettingById)
-	rg.PUT("/settings/:settingId", controller.UpsertSetting)
-	rg.DELETE("/settings/:settingId", controller.DeleteSettingById)
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		path := strings.TrimPrefix(r.URL.Path, "/api/settings/")
+		segments := strings.Split(strings.Trim(path, "/"), "/")
+
+		switch {
+		case r.Method == http.MethodGet && len(segments) == 1 && segments[0] == "":
+			controller.GetSettings(w, r)
+		case r.Method == http.MethodGet && len(segments) == 1:
+			controller.GetSettingById(w, r, segments[0])
+		case r.Method == http.MethodPut && len(segments) == 1:
+			controller.UpsertSetting(w, r, segments[0])
+		case r.Method == http.MethodDelete && len(segments) == 1:
+			controller.DeleteSettingById(w, r, segments[0])
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
 }

@@ -8,7 +8,7 @@ const Authentication = () => {
 
   useEffect(() => {
     const fetchUser = async () => {
-      const response = await fetch(`/api/activated`, {
+      const response = await fetch(`/api/auth/activated`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
@@ -23,7 +23,7 @@ const Authentication = () => {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (activated) {
-      const token = await fetch(`/api/login`, {
+      const token = await fetch(`/api/auth/login`, {
         method: "POST",
         body: JSON.stringify({ username: username, password: password }),
         headers: {
@@ -36,7 +36,7 @@ const Authentication = () => {
         window.location.reload();
       }
     } else {
-      await fetch(`/api/register`, {
+      await fetch(`/api/auth/register`, {
         method: "POST",
         body: JSON.stringify({ username: username, password: password }),
         headers: {

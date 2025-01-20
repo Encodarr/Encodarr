@@ -8,6 +8,7 @@ import (
 	"transfigurr/interfaces"
 	"transfigurr/models"
 	"transfigurr/tasks"
+	"transfigurr/types"
 )
 
 type ScanService struct {
@@ -18,39 +19,17 @@ type ScanService struct {
 	metadataService interfaces.MetadataServiceInterface
 	encodeService   interfaces.EncodeServiceInterface
 	eventService    interfaces.EventServiceInterface
-	seriesRepo      interfaces.SeriesRepositoryInterface
-	seasonRepo      interfaces.SeasonRepositoryInterface
-	episodeRepo     interfaces.EpisodeRepositoryInterface
-	movieRepo       interfaces.MovieRepositoryInterface
-	settingRepo     interfaces.SettingRepositoryInterface
-	systemRepo      interfaces.SystemRepositoryInterface
-	profileRepo     interfaces.ProfileRepositoryInterface
-	authRepo        interfaces.AuthRepositoryInterface
-	userRepo        interfaces.UserRepositoryInterface
-	historyRepo     interfaces.HistoryRepositoryInterface
-	eventRepo       interfaces.EventRepositoryInterface
-	codecRepo       interfaces.CodecRepositoryInterface
+	repositories    *types.Repositories
 }
 
-func NewScanService(eventService interfaces.EventServiceInterface, metadataService interfaces.MetadataServiceInterface, encodeService interfaces.EncodeServiceInterface, seriesRepo interfaces.SeriesRepositoryInterface, seasonRepo interfaces.SeasonRepositoryInterface, episodeRepo interfaces.EpisodeRepositoryInterface, movieRepo interfaces.MovieRepositoryInterface, settingRepo interfaces.SettingRepositoryInterface, systemRepo interfaces.SystemRepositoryInterface, profileRepo interfaces.ProfileRepositoryInterface, authRepo interfaces.AuthRepositoryInterface, userRepo interfaces.UserRepositoryInterface, historyRepo interfaces.HistoryRepositoryInterface, eventRepo interfaces.EventRepositoryInterface, codecRepo interfaces.CodecRepositoryInterface) interfaces.ScanServiceInterface {
+func NewScanService(eventService interfaces.EventServiceInterface, metadataService interfaces.MetadataServiceInterface, encodeService interfaces.EncodeServiceInterface, repositories *types.Repositories) interfaces.ScanServiceInterface {
 	service := &ScanService{
 		scanQueue:       make([]models.Item, 0),
 		scanSet:         make(map[string]struct{}),
 		metadataService: metadataService,
 		encodeService:   encodeService,
 		eventService:    eventService,
-		seriesRepo:      seriesRepo,
-		seasonRepo:      seasonRepo,
-		episodeRepo:     episodeRepo,
-		movieRepo:       movieRepo,
-		settingRepo:     settingRepo,
-		systemRepo:      systemRepo,
-		profileRepo:     profileRepo,
-		authRepo:        authRepo,
-		userRepo:        userRepo,
-		historyRepo:     historyRepo,
-		eventRepo:       eventRepo,
-		codecRepo:       codecRepo,
+		repositories:    repositories,
 	}
 	service.cond = sync.NewCond(&service.mu)
 	return service
@@ -62,7 +41,7 @@ func (s *ScanService) EnqueueAll() {
 }
 
 func (s *ScanService) EnqueueAllMovies() {
-	movies, err := s.movieRepo.GetMovies()
+	movies, err := s.repositories.MovieRepo.GetMovies()
 	if err != nil {
 		return
 	}
@@ -79,7 +58,7 @@ func (s *ScanService) EnqueueAllMovies() {
 }
 
 func (s *ScanService) EnqueueAllSeries() {
-	series, err := s.seriesRepo.GetSeries()
+	series, err := s.repositories.SeriesRepo.GetSeries()
 	if err != nil {
 		return
 	}
@@ -117,15 +96,15 @@ func (s *ScanService) process() {
 		s.scanQueue = s.scanQueue[1:]
 		s.mu.Unlock()
 		s.processItem(item)
-		tasks.ScanSystem(s.seriesRepo, s.systemRepo)
+		tasks.ScanSystem(s.repositories.SeriesRepo, s.repositories.SystemRepo)
 	}
 }
 
 func (s *ScanService) processItem(item models.Item) {
 	if item.Type == "movie" {
-		tasks.ScanMovie(item.Id, s.movieRepo, s.settingRepo, s.profileRepo)
-		tasks.ValidateMovie(item.Id, s.movieRepo)
-		movie, err := s.movieRepo.GetMovieById(item.Id)
+		tasks.ScanMovie(item.Id, s.repositories.MovieRepo, s.repositories.SettingRepo, s.repositories.ProfileRepo)
+		tasks.ValidateMovie(item.Id, s.repositories.MovieRepo)
+		movie, err := s.repositories.MovieRepo.GetMovieById(item.Id)
 		if err != nil {
 			return
 		}
@@ -139,9 +118,9 @@ func (s *ScanService) processItem(item models.Item) {
 		}
 	} else if item.Type == "series" {
 		s.eventService.Log("INFO", "scan", "Scanning series: "+item.Id)
-		tasks.ScanSeries(s.encodeService, item.Id, s.seriesRepo, s.seasonRepo, s.episodeRepo, s.settingRepo, s.profileRepo)
-		tasks.ValidateSeries(item.Id, s.seriesRepo, s.seasonRepo, s.episodeRepo)
-		series, _ := s.seriesRepo.GetSeriesByID(item.Id)
+		tasks.ScanSeries(s.encodeService, item.Id, s.repositories.SeriesRepo, s.repositories.SeasonRepo, s.repositories.EpisodeRepo, s.repositories.SettingRepo, s.repositories.ProfileRepo)
+		tasks.ValidateSeries(item.Id, s.repositories.SeriesRepo, s.repositories.SeasonRepo, s.repositories.EpisodeRepo)
+		series, _ := s.repositories.SeriesRepo.GetSeriesByID(item.Id)
 
 		if series.Name == "" {
 			s.metadataService.Enqueue(models.Item{Type: "series", Id: series.Id})

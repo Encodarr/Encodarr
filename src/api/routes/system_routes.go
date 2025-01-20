@@ -1,16 +1,32 @@
 package routes
 
 import (
+	"net/http"
+	"strings"
 	"transfigurr/api/controllers"
 	"transfigurr/interfaces"
-
-	"github.com/gin-gonic/gin"
 )
 
-func SystemRoutes(rg *gin.RouterGroup, systemRepo interfaces.SystemRepositoryInterface) {
+func HandleSystem(systemRepo interfaces.SystemRepositoryInterface) http.HandlerFunc {
 	controller := controllers.NewSystemController(systemRepo)
-	rg.GET("/systems", controller.GetSystems)
-	rg.GET("/systems/:systemId", controller.GetSystemById)
-	rg.PUT("/systems/:systemId", controller.UpsertSystem)
-	rg.DELETE("/systems/:systemId", controller.DeleteSystemById)
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		path := strings.TrimPrefix(r.URL.Path, "/api/system/")
+		segments := strings.Split(strings.Trim(path, "/"), "/")
+
+		switch {
+		case r.Method == http.MethodGet && len(segments) == 1 && segments[0] == "":
+			controller.GetSystems(w, r)
+		case r.Method == http.MethodGet && len(segments) == 1:
+			controller.GetSystemById(w, r, segments[0])
+		case r.Method == http.MethodPut && len(segments) == 1:
+			controller.UpsertSystem(w, r, segments[0])
+		case r.Method == http.MethodDelete && len(segments) == 1:
+			controller.DeleteSystemById(w, r, segments[0])
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	}
 }

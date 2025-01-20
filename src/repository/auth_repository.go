@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+	"log"
 	"transfigurr/models"
 
 	"gorm.io/gorm"
@@ -34,4 +35,26 @@ func (repo *AuthRepository) CreateUser(user *models.User) error {
 		return err
 	}
 	return nil
+}
+func (repo *AuthRepository) UpdateUser(user *models.User) error {
+	var existingUser models.User
+
+	result := repo.DB.Where("secret = ?", user.Secret).First(&existingUser)
+	if result.Error != nil {
+		log.Print("User not found:", result.Error)
+		return result.Error
+	}
+
+	// Update the existing user with new values
+	existingUser.Username = user.Username
+	existingUser.Password = user.Password
+
+	// Save the updated user
+	// Update with WHERE condition
+	return repo.DB.Model(&existingUser).
+		Where("secret = ?", existingUser.Secret).
+		Updates(map[string]interface{}{
+			"username": user.Username,
+			"password": user.Password,
+		}).Error
 }

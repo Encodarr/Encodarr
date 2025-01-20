@@ -30,4 +30,5 @@ func SeedDB(db *gorm.DB) {
 	seeds.SeedProfiles(db)
 	seeds.SeedSettings(db)
 	seeds.SeedSystems(db)
+	seeds.SeedUser(db)
 }
