@@ -58,7 +58,7 @@ func ScanMovie(movieID string, movieRepo interfaces.MovieRepositoryInterface, se
 
 	movie, err := movieRepo.GetMovieById(movieID)
 	if err != nil {
-		return
+		log.Print(err)
 	}
 
 	// Initialize a new movie if it doesn't exist
@@ -70,20 +70,20 @@ func ScanMovie(movieID string, movieRepo interfaces.MovieRepositoryInterface, se
 
 	defaultProfile, settingsErr := settingRepo.GetSettingById("defaultProfile")
 	if settingsErr != nil {
-		return
+		log.Print((err))
 	}
 
 	if movie.ProfileID == 0 {
 		profileID, err := strconv.Atoi(defaultProfile.Value)
 		if err != nil {
-			return
+			log.Print(err)
 		}
 		movie.ProfileID = profileID
 	}
 
 	profile, profileErr := profileRepo.GetProfileById(movie.ProfileID)
 	if profileErr != nil {
-		return
+		log.Print(err)
 	}
 
 	fileFound := false
@@ -130,7 +130,7 @@ func ScanMovie(movieID string, movieRepo interfaces.MovieRepositoryInterface, se
 
 	_, err = movieRepo.UpsertMovie(movie.Id, movie)
 	if err != nil {
-		return
+		log.Print(err)
 	}
 
 }
