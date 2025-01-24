@@ -14,12 +14,11 @@ jobs:
         with:
           go-version: "1.23.4"
       - name: Install dependencies
-        working-directory: src
         run: go mod download
       - name: Install staticcheck
         run: go install honnef.co/go/tools/cmd/staticcheck@latest
       - name: Run staticcheck
-        working-directory: src
+        working-directory: cmd/transfigurr
         run: staticcheck ./...
       - name: Run tests
         working-directory: src
