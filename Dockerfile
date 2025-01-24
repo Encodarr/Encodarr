@@ -3,53 +3,54 @@ FROM node:lts-alpine AS frontend
 WORKDIR /frontend
 COPY frontend/package*.json ./
 
-# Clean npm cache
-RUN npm cache clean --force
+# Clean npm cache and install dependencies
+RUN npm cache clean --force && npm ci
 
-# Install dependencies
-RUN npm ci
-
+# Copy frontend source and build
 COPY frontend/ ./
 RUN npm run build
 
-# Stage 2: Build the Go backend with CGO enabled
-FROM golang:1.23-alpine AS backend
-WORKDIR /src
+# Stage 2: Build the Go backend
+FROM golang:1.23.4-alpine AS backend
+WORKDIR /app
 
 # Install necessary dependencies for CGO
 RUN apk add --no-cache gcc musl-dev
 
-COPY src /src
+# Copy go files and download modules
+COPY go.mod go.sum ./
 RUN go mod download
 
-# Enable CGO and build the Go application
+# Copy rest of the source code
+COPY . .
+
+# Build the Go application
 ENV CGO_ENABLED=1
-RUN go build -o main .
+RUN go build -o /app/transfigurr ./cmd/transfigurr
 
-# Stage 3: Combine frontend and backend
+# Stage 3: Final image
 FROM alpine:latest
-WORKDIR /
+WORKDIR /app
 
-# Install SQLite3 library
-RUN apk add --no-cache sqlite-libs
+# Install runtime dependencies
+RUN apk add --no-cache ffmpeg sqlite-libs
 
-COPY --from=frontend /frontend/dist /frontend/dist
-COPY --from=backend /src/main /src/main
+# Create frontend directory
+RUN mkdir -p /app/frontend
 
-# Stage 4: Install ffmpeg
-RUN apk add --no-cache --update \
-    ffmpeg \
-    && rm -rf /var/cache/apk/*
+# Copy built artifacts from previous stages
+COPY --from=frontend /frontend/dist /app/frontend/dist
+COPY --from=backend /app/transfigurr /app/
 
-# Stage 5: Copy the init script and execute
-WORKDIR /
-COPY init /init
-RUN chmod +x /init
+# Copy initialization script
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
 
+# Set default environment variables
 ENV PUID=1000
 ENV PGID=1000
 ENV TZ=America/New_York
+
 EXPOSE 7889
 
-# Use ash to run the init script
-CMD ["/bin/ash", "/init"]
+CMD ["/bin/ash", "/docker-entrypoint.sh"]

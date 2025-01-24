@@ -1,7 +1,13 @@
 import styles from "./Poster.module.scss";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-const PosterComponent = ({ media, posterWidth, posterHeight, profiles, settings }: any) => {
+const PosterComponent = ({
+  media,
+  posterWidth,
+  posterHeight,
+  profiles,
+  settings,
+}: any) => {
   const type = media?.episodeCount != undefined ? "series" : "movies";
   const progress = () => {
     if (media?.episodeCount == undefined) {
@@ -9,8 +15,8 @@ const PosterComponent = ({ media, posterWidth, posterHeight, profiles, settings 
     }
     return media?.episodeCount === 0
       ? "100%"
-      : ((media?.episodeCount - media?.missingEpisodes) /
-          media?.episodeCount || 0) *
+      : ((media?.episodeCount - media?.missingEpisodes) / media?.episodeCount ||
+          0) *
           100 +
           "%";
   };
@@ -36,7 +42,7 @@ const PosterComponent = ({ media, posterWidth, posterHeight, profiles, settings 
         if ("caches" in window) {
           cache = await caches.open("image-cache");
           cachedResponse = await cache.match(
-            `/api/${type}/${media?.id}/poster`
+            `/api/artwork/${type}/${media?.id}/poster`
           );
         }
 
@@ -44,11 +50,14 @@ const PosterComponent = ({ media, posterWidth, posterHeight, profiles, settings 
           const blob = await cachedResponse.blob();
           setImgSrc(URL.createObjectURL(blob));
         } else {
-          const response = await fetch(`/api/${type}/${media?.id}/poster`, {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          });
+          const response = await fetch(
+            `/api/artwork/${type}/${media?.id}/poster`,
+            {
+              headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
+              },
+            }
+          );
 
           if (response.status !== 200) {
             setImgSrc(null);
@@ -59,7 +68,10 @@ const PosterComponent = ({ media, posterWidth, posterHeight, profiles, settings 
           const blob = await response.blob();
           setImgSrc(URL.createObjectURL(blob));
           if (cache) {
-            cache.put(`/api/${type}/${media?.id}/poster`, clonedResponse);
+            cache.put(
+              `/api/artwork/${type}/${media?.id}/poster`,
+              clonedResponse
+            );
           }
         }
       } catch (e) {
@@ -121,7 +133,11 @@ const PosterComponent = ({ media, posterWidth, posterHeight, profiles, settings 
               )}
               {settings?.mediaPosterShowProfile == "true" && (
                 <div className={styles.profile}>
-                  {profiles ? profiles.find((profile: any) => profile.id === media.profileId)?.name : ""}
+                  {profiles
+                    ? profiles.find(
+                        (profile: any) => profile.id === media.profileId
+                      )?.name
+                    : ""}
                 </div>
               )}
             </div>

@@ -58,7 +58,7 @@ const Movie = ({ movieName }: any) => {
         if ("caches" in window) {
           cache = await caches.open("image-cache");
           cachedResponse = await cache.match(
-            `/api/movies/${movie?.id}/${path}`
+            `/api/artwork/movies/${movie?.id}/${path}`
           );
         }
 
@@ -66,11 +66,14 @@ const Movie = ({ movieName }: any) => {
           const blob = await cachedResponse.blob();
           setSrc(URL.createObjectURL(blob));
         } else {
-          const response = await fetch(`/api/movies/${movie?.id}/${path}`, {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          });
+          const response = await fetch(
+            `/api/artwork/movies/${movie?.id}/${path}`,
+            {
+              headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
+              },
+            }
+          );
           if (response.status !== 200) {
             setSrc(null);
             return;
@@ -79,7 +82,10 @@ const Movie = ({ movieName }: any) => {
           const blob = await response.blob();
           setSrc(URL.createObjectURL(blob));
           if (cache) {
-            cache.put(`/api/movies/${movie?.id}/${path}`, clonedResponse);
+            cache.put(
+              `/api/artwork/movies/${movie?.id}/${path}`,
+              clonedResponse
+            );
           }
         }
       } catch (e) {
