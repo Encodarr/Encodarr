@@ -24,8 +24,21 @@ RUN go mod download
 # Copy rest of the source code
 COPY . .
 
-# Build the Go application
+# Build for target platform
+ARG TARGETOS
+ARG TARGETARCH
 ENV CGO_ENABLED=1
+ENV GOOS=$TARGETOS 
+ENV GOARCH=$TARGETARCH
+
+# Install cross-compiler for ARM64 if needed
+RUN if [ "$TARGETARCH" = "arm64" ]; then \
+    apt-get update && apt-get install -y gcc-aarch64-linux-gnu \
+    && rm -rf /var/lib/apt/lists/* ; \
+    export CC=aarch64-linux-gnu-gcc; \
+    fi
+
+# Build the application
 RUN go build -o /app/transfigurr ./cmd/transfigurr
 
 # Stage 3: Final image
@@ -50,6 +63,9 @@ RUN chmod +x /docker-entrypoint.sh
 ENV PUID=1000
 ENV PGID=1000
 ENV TZ=America/New_York
+
+# Switch to non-root user
+USER nonroot
 
 EXPOSE 7889
 
