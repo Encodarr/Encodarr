@@ -10,8 +10,8 @@ import { Tooltip } from "react-tooltip";
 const MediaTable = ({ settings, profiles, sortedMedia }: any) => {
 	const progress = (series: any) => {
 		return (
-			((series?.episode_count - series?.missing_episodes) /
-				series?.episode_count || 0) *
+			((series?.episodeCount - series?.missingEpisodes) /
+				series?.episodeCount || 0) *
 				100 +
 			"%"
 		);
@@ -33,23 +33,23 @@ const MediaTable = ({ settings, profiles, sortedMedia }: any) => {
 					<tr>
 						<th></th>
 						<th>Title</th>
-						{settings?.media_table_showType == "1" && <th>Type</th>}
-						{settings?.media_table_showProfile == "1" && <th>Profile</th>}
-						{settings?.media_table_showNetwork == "1" && (
+						{settings?.mediaTableShowType == "true" && <th>Type</th>}
+						{settings?.mediaTableShowProfile == "true" && <th>Profile</th>}
+						{settings?.mediaTableShowNetwork == "true" && (
 							<th>Network / Studio</th>
 						)}
-						{settings?.media_table_showSeasons == "1" && <th>Seasons</th>}
-						{settings?.media_table_showEpisodes == "1" && <th>Episodes</th>}
-						{settings?.media_table_showEpisodeCount == "1" && (
+						{settings?.mediaTableShowSeasons == "true" && <th>Seasons</th>}
+						{settings?.mediaTableShowEpisodes == "true" && <th>Episodes</th>}
+						{settings?.mediaTableShowEpisodeCount == "true" && (
 							<th>Episode Count</th>
 						)}
-						{settings?.media_table_showYear == "1" && <th>Year</th>}
-						{settings?.media_table_showPath == "1" && <th>Path</th>}
-						{settings?.media_table_showSizeOnDisk == "1" && (
+						{settings?.mediaTableShowYear == "true" && <th>Year</th>}
+						{settings?.mediaTableShowPath == "true" && <th>Path</th>}
+						{settings?.mediaTableShowSizeOnDisk == "true" && (
 							<th>Size On Disk</th>
 						)}
-						{settings?.media_table_showSizeSaved == "1" && <th>Space Saved</th>}
-						{settings?.media_table_showGenre == "1" && <th>Genre</th>}
+						{settings?.mediaTableShowSizeSaved == "true" && <th>Space Saved</th>}
+						{settings?.mediaTableShowGenre == "true" && <th>Genre</th>}
 					</tr>
 				</thead>
 				<tbody>
@@ -100,23 +100,23 @@ const MediaTable = ({ settings, profiles, sortedMedia }: any) => {
 									{media?.name ? media?.name : media?.id}
 								</Link>
 							</td>
-							<td>{media?.episode_count == undefined ? "Movie" : "Series"}</td>
-							{settings?.media_table_showProfile == "1" && (
-								<td>{profiles ? profiles[media.profile_id]?.name : ""}</td>
-							)}
-							{settings?.media_table_showNetwork == "1" && (
+							<td>{media?.episodeCount == undefined ? "Movie" : "Series"}</td>
+							{settings?.mediaTableShowProfile == "true" && (
+						<td>{profiles ? profiles.find((profile: any) => profile.id === media.profileId)?.name : ""}</td>
+					)}
+							{settings?.mediaTableShowNetwork == "true" && (
 								<td>
-									{media?.episode_count == undefined
+									{media?.episodeCount == undefined
 										? media?.studio
 										: media?.networks}
 								</td>
 							)}
-							{settings?.media_table_showSeasons == "1" && (
-								<td>{media?.seasons_count}</td>
+							{settings?.mediaTableShowSeasons == "true" && (
+								<td>{media?.seasonsCount}</td>
 							)}
-							{settings?.media_table_showEpisodes == "1" && (
+							{settings?.mediaTableShowEpisodes == "true" && (
 								<td>
-									{media?.episode_count != undefined && (
+									{media?.episodeCount != undefined && (
 										<div className={styles.progressBar}>
 											<div
 												className={styles.progress}
@@ -126,32 +126,29 @@ const MediaTable = ({ settings, profiles, sortedMedia }: any) => {
 												}}
 											/>
 											<div className={styles.detailText}>
-												{media?.episode_count - media?.missing_episodes}/
-												{media?.episode_count}
+												{media?.episodeCount - media?.missingEpisodes}/
+												{media?.episodeCount}
 											</div>
 										</div>
 									)}
 								</td>
 							)}
-							{settings?.media_table_showEpisodeCount == "1" && (
-								<td>{media?.episode_count}</td>
+							{settings?.mediaTableShowEpisodeCount == "true" && (
+								<td>{media?.episodeCount}</td>
 							)}
-							{settings?.media_table_showYear == "1" && (
-								<td>{media?.release_date}</td>
+							{settings?.mediaTableShowYear == "true" && (
+								<td>{media?.releaseDate}</td>
 							)}
-							{settings?.media_table_showPath == "1" && (
-								<td>/series/{media.id}</td>
+							{settings?.mediaTableShowSpaceSaved == "true" && (
+								<td>{formatSize(media.spaceSaved)}</td>
 							)}
-							{settings?.media_table_showSpaceSaved == "1" && (
-								<td>{formatSize(media.space_saved)}</td>
-							)}
-							{settings?.media_table_showSizeOnDisk == "1" && (
+							{settings?.mediaTableShowSizeOnDisk == "true" && (
 								<td>{formatSize(media.size)}</td>
 							)}
-							{settings?.media_table_showSizeSaved == "1" && (
-								<td>{formatSize(media.space_saved)}</td>
+							{settings?.mediaTableShowSizeSaved == "true" && (
+								<td>{formatSize(media.spaceSaved)}</td>
 							)}
-							{settings?.media_table_showGenre == "1" && <td>{media.genre}</td>}
+							{settings?.mediaTableShowGenre == "true" && <td>{media.genre}</td>}
 						</tr>
 					))}
 				</tbody>

@@ -11,7 +11,7 @@ const Season = ({ season, monitored }: any) => {
 		setIsOpen(!isOpen);
 	};
 	const backgroundColor = () => {
-		if (season?.missing_episodes != 0) {
+		if (season?.missingEpisodes != 0) {
 			return "var(--dangerColor)";
 		} else {
 			return "var(--successColor)";
@@ -31,8 +31,8 @@ const Season = ({ season, monitored }: any) => {
 						className={styles.profileRatio}
 						style={{ backgroundColor: backgroundColor() }}
 					>
-						{season?.episode_count - season?.missing_episodes} /{" "}
-						{season?.episode_count}
+						{season?.episodeCount - season?.missingEpisodes} /{" "}
+						{season?.episodeCount}
 					</div>
 					<div className={styles.size}>{formatSize(season?.size)}</div>
 				</div>
@@ -69,14 +69,14 @@ const Season = ({ season, monitored }: any) => {
 							.map((episode: any, index: number) => (
 								<tr key={index}>
 									<td>{monitored ? <></> : <></>}</td>
-									<td>{episode?.episode_number}</td>
+									<td>{episode?.episodeNumber}</td>
 									<td>
-										{episode?.episode_name
-											? episode.episode_name
+										{episode?.episodeName
+											? episode.episodeName
 											: episode.filename}
 									</td>
-									<td>{formatDate(episode?.air_date)}</td>
-									<td>{episode?.video_codec}</td>
+									<td>{formatDate(episode?.airDate)}</td>
+									<td>{episode?.videoCodec}</td>
 									<td>{formatSize(episode?.size)}</td>
 								</tr>
 							))}

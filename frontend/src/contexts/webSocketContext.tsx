@@ -1,51 +1,101 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, createContext } from "react";
+import { EventSourcePolyfill } from "event-source-polyfill";
 
-import { createContext } from "react";
-
-export type WebSocketContextType = {
-	data;
-	ws: WebSocket | null;
+export type SSEContextType = {
+  data: any;
+  eventSource: EventSourcePolyfill | null;
 };
 
-export const WebSocketContext = createContext<WebSocketContextType | undefined>(
-	undefined
-);
+export const SSEContext = createContext<SSEContextType | undefined>(undefined);
 
-interface WebSocketProviderProps {
-	children: React.ReactNode;
+interface SSEProviderProps {
+  children: React.ReactNode;
 }
 
-export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
-	children,
-}) => {
-	const [data, setData] = useState({});
-	const ws = useRef<WebSocket | null>(null);
+export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
+  const [data, setData] = useState({});
+  const eventSource = useRef<EventSourcePolyfill | null>(null);
+  const reconnectInterval = useRef<number | null>(null);
 
-	useEffect(() => {
-		ws.current = new WebSocket(
-			`ws://${window.location.hostname}:${
-				window.location.port
-			}/ws?token=${localStorage.getItem("token")}`
-		);
-		ws.current.onmessage = (e) => {
-			const newData = JSON.parse(e.data);
-			setData((prevData) => ({ ...prevData, ...newData }));
-		};
+  const connectSSE = () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.error("No token found in localStorage");
+      return;
+    }
 
-		return () => {
-			if (ws.current) {
-				ws.current.close();
-			}
-		};
-	}, []);
+    if (eventSource.current) {
+      eventSource.current.close();
+    }
 
-	const value: WebSocketContextType = {
-		data,
-		ws: ws.current,
-	};
-	return (
-		<WebSocketContext.Provider value={value}>
-			{children}
-		</WebSocketContext.Provider>
-	);
+    eventSource.current = new EventSourcePolyfill(
+      `http://${window.location.hostname}:7889/api/events/stream`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+      }
+    );
+
+    // Handle different event types
+    const eventTypes = [
+      "settings",
+      "system",
+      "profiles",
+      "containers",
+      "codecs",
+      "encoders",
+      "queue",
+      "series",
+      "movies",
+      "history",
+      "logs",
+    ];
+
+    eventTypes.forEach((eventType) => {
+      eventSource.current?.addEventListener(
+        eventType,
+        (event: MessageEvent) => {
+          const newData = JSON.parse(event.data);
+          setData((prevData) => ({ ...prevData, [eventType]: newData }));
+        }
+      );
+    });
+
+    eventSource.current.onopen = () => {
+      if (reconnectInterval.current) {
+        clearInterval(reconnectInterval.current);
+        reconnectInterval.current = null;
+      }
+    };
+
+    eventSource.current.onerror = (error) => {
+      console.error("SSE error:", error);
+      eventSource.current?.close();
+      if (!reconnectInterval.current) {
+        reconnectInterval.current = window.setInterval(connectSSE, 5000);
+      }
+    };
+  };
+
+  useEffect(() => {
+    connectSSE();
+
+    return () => {
+      if (eventSource.current) {
+        eventSource.current.close();
+      }
+      if (reconnectInterval.current) {
+        clearInterval(reconnectInterval.current);
+      }
+    };
+  }, []);
+
+  const value: SSEContextType = {
+    data,
+    eventSource: eventSource.current,
+  };
+
+  return <SSEContext.Provider value={value}>{children}</SSEContext.Provider>;
 };

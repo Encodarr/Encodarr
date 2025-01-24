@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 const HistoryTable = ({ historyArray, settings }: any) => {
-	const recordsPerPage = settings?.history_page_size || 0;
+	const recordsPerPage = settings?.historyPageSize || 0;
 	const [currentPage, setCurrentPage] = useState(1);
 	const indexOfLastRecord = currentPage * recordsPerPage;
 	const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
@@ -80,17 +80,17 @@ const HistoryTable = ({ historyArray, settings }: any) => {
 						<td>
 							{entry?.type == "episode" && (
 								<>
-									{entry?.season_number}x{entry?.episode_number}
+									{entry?.seasonNumber}x{entry?.episodeNumber}
 								</>
 							)}
 						</td>
 						<td className={styles.codecRow}>
-							<Codec codec={entry?.prev_codec} />
+							<Codec codec={entry?.prevCodec} />
 						</td>
 						<td className={styles.codecRow}>
-							<Codec codec={entry?.new_codec} />
+							<Codec codec={entry?.newCodec} />
 						</td>
-						<td>{formatSize(entry?.prev_size - entry?.new_size)}</td>
+						<td>{formatSize(entry?.prevSize - entry?.newSize)}</td>
 						<td>{formatDate(entry?.date)}</td>
 					</tr>
 				))}

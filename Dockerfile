@@ -1,36 +1,56 @@
 # Stage 1: Build the React frontend
-FROM node:alpine as frontend
+FROM node:lts-alpine AS frontend
 WORKDIR /frontend
 COPY frontend/package*.json ./
-RUN npm ci
+
+# Clean npm cache and install dependencies
+RUN npm cache clean --force && npm ci
+
+# Copy frontend source and build
 COPY frontend/ ./
 RUN npm run build
 
-# Stage 2: Build the FastAPI backend
-FROM python:alpine as backend
-WORKDIR /
-COPY src /src
+# Stage 2: Build the Go backend
+FROM golang:1.23.4-alpine AS backend
+WORKDIR /app
 
-# Stage 3: Combine frontend and backend
-FROM python:alpine
-WORKDIR /
-COPY --from=frontend /frontend/dist /frontend/dist
-COPY --from=backend /src /src
+# Install necessary dependencies for CGO
+RUN apk add --no-cache gcc musl-dev
 
-# Stage 4: Install python requirements and ffmpeg
-RUN apk add --no-cache --update \
-    ffmpeg \
-    && pip install --no-cache-dir -r src/requirements.txt \
-    && rm -rf /var/cache/apk/*
+# Copy go files and download modules
+COPY go.mod go.sum ./
+RUN go mod download
 
-# Stage 5: Copy the init script and execute
-WORKDIR /
-COPY init /init
-COPY /startup /startup
+# Copy rest of the source code
+COPY . .
 
-RUN chmod +x /init
+# Build the Go application
+ENV CGO_ENABLED=1
+RUN go build -o /app/transfigurr ./cmd/transfigurr
+
+# Stage 3: Final image
+FROM alpine:latest
+WORKDIR /app
+
+# Install runtime dependencies
+RUN apk add --no-cache ffmpeg sqlite-libs
+
+# Create frontend directory
+RUN mkdir -p /app/frontend
+
+# Copy built artifacts from previous stages
+COPY --from=frontend /frontend/dist /app/frontend/dist
+COPY --from=backend /app/transfigurr /app/
+
+# Copy initialization script
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+
+# Set default environment variables
 ENV PUID=1000
 ENV PGID=1000
 ENV TZ=America/New_York
+
 EXPOSE 7889
-CMD ["/init"]
+
+CMD ["/bin/ash", "/docker-entrypoint.sh"]

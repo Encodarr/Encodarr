@@ -11,7 +11,7 @@ const MovieModal = ({
 	profiles,
 }: any) => {
 	const onSave = async () => {
-		await fetch(`/api/movies/${content.name}`, {
+		await fetch(`/api/movies/${content.id}`, {
 			method: "PUT",
 			headers: {
 				"Content-Type": "application/json",
@@ -51,9 +51,9 @@ const MovieModal = ({
 				<div className={styles.inputContainer}>
 					<label className={styles.label}>Profile </label>
 					<InputSelect
-						selected={content.profile_id}
+						selected={content.profileId}
 						onChange={(e: any) => {
-							setContent({ ...content, profile_id: e.target.value });
+							setContent({ ...content, profileId: parseInt(e.target.value) });
 						}}
 					>
 						{Object.values(profiles)?.map((profile: any, index: number) => (

@@ -7,7 +7,7 @@ const EventsModal = ({ isOpen, setIsOpen, content, setContent }: any) => {
 	};
 	const onSave = async () => {
 		for (const key in content) {
-			fetch(`/api/settings`, {
+			fetch(`/api/settings/${key}`, {
 				method: "PUT",
 				headers: {
 					"Content-Type": "application/json",
@@ -30,11 +30,11 @@ const EventsModal = ({ isOpen, setIsOpen, content, setContent }: any) => {
 			<InputContainer
 				label="Page Size"
 				type="text"
-				selected={content.events_page_size}
+				selected={content.eventsPageSize}
 				onChange={(e: any) => {
 					setContent({
 						...content,
-						events_page_size: e.target.value,
+						eventsPageSize: e.target.value,
 					});
 				}}
 			/>

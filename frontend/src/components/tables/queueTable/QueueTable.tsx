@@ -4,13 +4,22 @@ import Codec from "../../codec/Codec";
 import { formatSize } from "../../../utils/format";
 import Table from "../../table/Table";
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 const QueueTable = ({ queueArray, profiles, series, settings }: any) => {
+
 	const [currentPage, setCurrentPage] = useState(1);
-	const recordsPerPage = settings?.queue_page_size || 0;
-	const totalPages = Math.ceil(queueArray.length / recordsPerPage);
+	series = series ? () => {
+		return series?.reduce((map, item) => {
+			map[item.id] = item;
+			return map;
+		}, {});
+	} : {};
+
+	const recordsPerPage = settings?.queuePageSize || 0;
+	const totalPages = Math.ceil(queueArray?.length / recordsPerPage);
 	const indexOfLastRecord = currentPage * recordsPerPage;
 	const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
-	const currentRecords = queueArray.slice(
+	const currentRecords = queueArray?.slice(
 		indexOfFirstRecord,
 		indexOfLastRecord
 	);
@@ -33,7 +42,6 @@ const QueueTable = ({ queueArray, profiles, series, settings }: any) => {
 	useEffect(() => {
 		setCurrentPage(1);
 	}, [recordsPerPage]);
-
 	return (
 		<Table
 			showPagination={true}
@@ -41,7 +49,7 @@ const QueueTable = ({ queueArray, profiles, series, settings }: any) => {
 			currentPage={currentPage}
 			prevPage={prevPage}
 			totalPages={totalPages}
-			totalRecords={queueArray.length}
+			totalRecords={queueArray?.length}
 			lastPage={lastPage}
 			nextPage={nextPage}
 		>
@@ -64,64 +72,34 @@ const QueueTable = ({ queueArray, profiles, series, settings }: any) => {
 							<QueueIcon className={styles.svg} />
 						</td>
 						<td>
-							<a
-								href={
-									q?.series_id ? "/series/" + q?.series_id : "/movies/" + q?.id
-								}
-								className={styles.name}
-							>
-								{q?.series_id ? q?.series_id : q?.id}
-							</a>
+							<Link to={
+								q?.seriesId ? "/series/" + q?.seriesId : "/movies/" + q?.id
+							} className={styles.name}>
+
+								{q?.seriesId ? q?.seriesId : q?.id}
+							</Link>
 						</td>
-						<td>{q?.series_id ? "Series" : "Movie"}</td>
+						<td>{q?.type == "episode" ? "Series" : "Movie"}</td>
 						<td>
-							{q?.series_id && (
+							{q?.type == "episode" && (
 								<>
-									{q.season_number}x{q.episode_number}
+									{q.seasonNumber}x{q.episodeNumber}
 								</>
 							)}
 						</td>
 						<td>
-							{q?.series_id ? (
-								<>
-									{profiles &&
-									series &&
-									series[q?.series_id] &&
-									profiles[series[q?.series_id].profile_id]
-										? profiles[series[q?.series_id].profile_id].name
-										: ""}
-								</>
-							) : (
-								<>
-									{profiles && profiles[q?.profile_id]
-										? profiles[q?.profile_id].name
-										: ""}
-								</>
+							{profiles && series && (
+								profiles.find((profile: any) => profile.id == q?.profileId).name ?? "Profile not found"
 							)}
 						</td>
 						<td className={styles.codecRow}>
-							<Codec codec={q.video_codec} />
+							<Codec codec={q.codec} />
 						</td>
 						<td className={styles.codecRow}>
 							<Codec
-								codec={
-									q?.series_id ? (
-										<>
-											{profiles &&
-											series &&
-											series[q?.series_id] &&
-											profiles[series[q?.series_id].profile_id]
-												? profiles[series[q?.series_id].profile_id].codec
-												: ""}
-										</>
-									) : (
-										<>
-											{profiles && profiles[q?.profile_id]
-												? profiles[q?.profile_id].codec
-												: ""}
-										</>
-									)
-								}
+								codec={profiles && series && (
+									profiles.find((profile: any) => profile.id == q?.profileId).codec ?? "Profile not found"
+								)}
 							/>
 						</td>
 						<td>{formatSize(q?.size)}</td>
