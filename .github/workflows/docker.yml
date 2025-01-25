@@ -85,27 +85,30 @@ jobs:
             .
       - name: Create and push Docker manifest
         run: |
-
-          docker buildx imagetools create \
-            --tag docker.io/${{ env.IMAGE_NAME }}:${{ steps.set_tag.outputs.tag }} \
+          # Create and push manifest for docker.io latest/develop tag
+          docker manifest create \
+            docker.io/${{ env.IMAGE_NAME }}:${{ steps.set_tag.outputs.tag }} \
             docker.io/${{ env.IMAGE_NAME }}:amd64-${{ steps.set_tag.outputs.tag }} \
             docker.io/${{ env.IMAGE_NAME }}:arm64-${{ steps.set_tag.outputs.tag }}
-          docker buildx imagetools push docker.io/${{ env.IMAGE_NAME }}:${{ steps.set_tag.outputs.tag }}
+          docker manifest push docker.io/${{ env.IMAGE_NAME }}:${{ steps.set_tag.outputs.tag }}
 
-          docker buildx imagetools create \
-            --tag docker.io/${{ env.IMAGE_NAME }}:${{ env.BRANCH_NAME }} \
+          # Create and push manifest for docker.io branch name
+          docker manifest create \
+            docker.io/${{ env.IMAGE_NAME }}:${{ env.BRANCH_NAME }} \
             docker.io/${{ env.IMAGE_NAME }}:amd64-${{ env.BRANCH_NAME }} \
             docker.io/${{ env.IMAGE_NAME }}:arm64-${{ env.BRANCH_NAME }}
-          docker buildx imagetools push docker.io/${{ env.IMAGE_NAME }}:${{ env.BRANCH_NAME }}
+          docker manifest push docker.io/${{ env.IMAGE_NAME }}:${{ env.BRANCH_NAME }}
 
-          docker buildx imagetools create \
-            --tag ghcr.io/${{ env.IMAGE_NAME }}:${{ steps.set_tag.outputs.tag }} \
+          # Create and push manifest for ghcr.io latest/develop tag
+          docker manifest create \
+            ghcr.io/${{ env.IMAGE_NAME }}:${{ steps.set_tag.outputs.tag }} \
             ghcr.io/${{ env.IMAGE_NAME }}:amd64-${{ steps.set_tag.outputs.tag }} \
             ghcr.io/${{ env.IMAGE_NAME }}:arm64-${{ steps.set_tag.outputs.tag }}
-          docker buildx imagetools push ghcr.io/${{ env.IMAGE_NAME }}:${{ steps.set_tag.outputs.tag }}
+          docker manifest push ghcr.io/${{ env.IMAGE_NAME }}:${{ steps.set_tag.outputs.tag }}
 
-          docker buildx imagetools create \
-            --tag ghcr.io/${{ env.IMAGE_NAME }}:${{ env.BRANCH_NAME }} \
+          # Create and push manifest for ghcr.io branch name
+          docker manifest create \
+            ghcr.io/${{ env.IMAGE_NAME }}:${{ env.BRANCH_NAME }} \
             ghcr.io/${{ env.IMAGE_NAME }}:amd64-${{ env.BRANCH_NAME }} \
             ghcr.io/${{ env.IMAGE_NAME }}:arm64-${{ env.BRANCH_NAME }}
-          docker buildx imagetools push ghcr.io/${{ env.IMAGE_NAME }}:${{ env.BRANCH_NAME }}
+          docker manifest push ghcr.io/${{ env.IMAGE_NAME }}:${{ env.BRANCH_NAME }}
