@@ -84,3 +84,27 @@ jobs:
         run: |
           rm -rf ${{ env.BUILDX_CACHE_DIR }}
           mv ${{ env.BUILDX_CACHE_DIR }}-new ${{ env.BUILDX_CACHE_DIR }}
+
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v2
+        with:
+          path: .
+          format: "cyclonedx-json"
+          output-file: sbom.cdx
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v3
+        with:
+          name: sbom
+          path: sbom.cdx
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+        with:
+          cosign-release: "latest"
+
+      - name: Attest Docker image
+        run: cosign attest \
+          --predicate sbom.cdx \
+          --key ${{ secrets.COSIGN_KEY }} \
+          docker.io/${{ env.IMAGE_NAME }}:${{ steps.set_tag.outputs.tag }}
