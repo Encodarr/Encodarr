@@ -83,7 +83,7 @@ jobs:
             --tag ghcr.io/${{ env.IMAGE_NAME }}:arm64-${{ steps.set_tag.outputs.tag }} \
             --tag ghcr.io/${{ env.IMAGE_NAME }}:arm64-${{ env.BRANCH_NAME }} \
             .
-       name: Create and push Docker manifest
+       - name: Create and push Docker manifest
         run: |
           # Function to handle manifest operations
           create_and_push_manifest() {
