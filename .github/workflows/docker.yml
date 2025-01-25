@@ -85,35 +85,22 @@ jobs:
             .
       - name: Create and push Docker manifest
         run: |
-          # Function to handle manifest operations
+          # Enable Docker experimental features
+          export DOCKER_CLI_EXPERIMENTAL=enabled
+
           create_and_push_manifest() {
             local registry="$1"
             local tag="$2"
             
             echo "Creating manifest for ${registry}/${{ env.IMAGE_NAME }}:${tag}"
             
-            # Remove existing manifest if it exists
-            docker manifest rm "${registry}/${{ env.IMAGE_NAME }}:${tag}" 2>/dev/null || true
-            
-            # Create new manifest
-            docker manifest create "${registry}/${{ env.IMAGE_NAME }}:${tag}" \
-              --amend "${registry}/${{ env.IMAGE_NAME }}:amd64-${tag}" \
-              --amend "${registry}/${{ env.IMAGE_NAME }}:arm64-${tag}"
-            
-            # Add platform-specific annotations
-            docker manifest annotate "${registry}/${{ env.IMAGE_NAME }}:${tag}" \
+            # Create manifest list
+            docker buildx imagetools create -t "${registry}/${{ env.IMAGE_NAME }}:${tag}" \
               "${registry}/${{ env.IMAGE_NAME }}:amd64-${tag}" \
-              --os linux --arch amd64
-            
-            docker manifest annotate "${registry}/${{ env.IMAGE_NAME }}:${tag}" \
-              "${registry}/${{ env.IMAGE_NAME }}:arm64-${tag}" \
-              --os linux --arch arm64
-            
-            # Push with --purge to clean up local cache
-            docker manifest push --purge "${registry}/${{ env.IMAGE_NAME }}:${tag}"
+              "${registry}/${{ env.IMAGE_NAME }}:arm64-${tag}"
           }
 
-          # Process both registries and tags
+          # Process manifests for both registries
           for registry in "docker.io" "ghcr.io"; do
             create_and_push_manifest "$registry" "${{ steps.set_tag.outputs.tag }}"
             create_and_push_manifest "$registry" "${{ env.BRANCH_NAME }}"
