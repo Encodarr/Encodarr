@@ -14,9 +14,6 @@ RUN npm run build
 FROM golang:1.23.4-alpine AS backend
 WORKDIR /app
 
-# Install necessary dependencies for CGO
-RUN apk add --no-cache gcc musl-dev sqlite-dev
-
 # Copy go files and download modules
 COPY go.mod go.sum ./
 RUN go mod download
@@ -24,33 +21,42 @@ RUN go mod download
 # Copy rest of the source code
 COPY . .
 
-# Build for target platform
-ARG TARGETOS
-ARG TARGETARCH
-ENV CGO_ENABLED=1
-ENV GOOS=$TARGETOS 
-ENV GOARCH=$TARGETARCH
-
-# Install cross-compiler for ARM64 if needed
-RUN apk add --no-cache build-base
-RUN if [ "$TARGETARCH" = "arm64" ]; then \
-    apt-get update && apt-get install -y gcc-aarch64-linux-gnu \
-    && rm -rf /var/lib/apt/lists/* ; \
-    export CC=aarch64-linux-gnu-gcc; \
-    fi
-
 # Build the application
-RUN CGO_ENABLED=1 go build -o /app/transfigurr ./cmd/transfigurr
+RUN go build -o /app/transfigurr ./cmd/transfigurr
 
 # Stage 3: Final image
 FROM alpine:latest
 WORKDIR /app
 
+# Setup non-root user first
+RUN addgroup -g 1000 nonroot && \
+    adduser -u 1000 -G nonroot -h /app -D nonroot
+
+# Create all required directories
+RUN mkdir -p \
+    /config/db \
+    /config/artwork \
+    /movies \
+    /series \
+    /transcode \
+    /app/frontend && \
+    touch /config/restart.txt /config/shutdown.txt && \
+    chmod 666 /config/restart.txt /config/shutdown.txt && \
+    chown -R nonroot:nonroot \
+    /app \
+    /config \
+    /movies \
+    /series \
+    /transcode
+
+
+
 # Install runtime dependencies
 RUN apk add --no-cache ffmpeg sqlite-libs
 
 # Create frontend directory
-RUN mkdir -p /app/frontend
+RUN mkdir -p /app/frontend && \
+    chown -R nonroot:nonroot /app
 
 # Copy built artifacts from previous stages
 COPY --from=frontend /frontend/dist /app/frontend/dist
@@ -58,7 +64,9 @@ COPY --from=backend /app/transfigurr /app/
 
 # Copy initialization script
 COPY docker-entrypoint.sh /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh && \
+    chown -R nonroot:nonroot /app
+
 
 # Set default environment variables
 ENV PUID=1000
@@ -66,7 +74,8 @@ ENV PGID=1000
 ENV TZ=America/New_York
 
 # Switch to non-root user
-USER nonroot
+USER nonroot:nonroot
+
 
 EXPOSE 7889
 

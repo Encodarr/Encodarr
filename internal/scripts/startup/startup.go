@@ -12,6 +12,7 @@ import (
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	_ "modernc.org/sqlite" // Pure Go SQLite driver
 )
 
 func Startup() (sqlDB *sql.DB, servicesContainer *types.Services, repos *types.Repositories) {
@@ -26,11 +27,14 @@ func Startup() (sqlDB *sql.DB, servicesContainer *types.Services, repos *types.R
 		return
 	}
 
-	db, err := gorm.Open(sqlite.Open(config.DbPath), &gorm.Config{
+	dialector := sqlite.Open(config.DbPath)
+	db, err := gorm.Open(dialector, &gorm.Config{
 		DisableForeignKeyConstraintWhenMigrating: true,
 		SkipDefaultTransaction:                   true,
+		DisableAutomaticPing:                     true, // Added for pure Go SQLite
 	})
 	if err != nil {
+		log.Fatal(err)
 		return
 	}
 	InitDB(db)
