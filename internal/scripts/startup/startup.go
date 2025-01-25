@@ -12,7 +12,7 @@ import (
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	_ "modernc.org/sqlite" // Pure Go SQLite driver
+	_ "modernc.org/sqlite"
 )
 
 func Startup() (sqlDB *sql.DB, servicesContainer *types.Services, repos *types.Repositories) {
