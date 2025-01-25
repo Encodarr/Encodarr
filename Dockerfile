@@ -15,7 +15,7 @@ FROM golang:1.23.4-alpine AS backend
 WORKDIR /app
 
 # Install necessary dependencies for CGO
-RUN apk add --no-cache gcc musl-dev
+RUN apk add --no-cache gcc musl-dev sqlite-dev
 
 # Copy go files and download modules
 COPY go.mod go.sum ./
