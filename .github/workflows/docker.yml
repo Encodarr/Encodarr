@@ -42,14 +42,14 @@ jobs:
         id: set_tag
         run: |
           if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "::set-output name=tag::latest"
-            echo "::set-output name=version::${{ github.event.pull_request.title }}"
+            echo "tag=latest" >> $GITHUB_OUTPUT
+            echo "version=${{ github.event.pull_request.title }}" >> $GITHUB_OUTPUT
             echo "BRANCH_NAME=latest" >> $GITHUB_ENV
           else
             BRANCH_NAME=$(echo "${{ github.ref }}" | sed -r 's/refs\/heads\///g')
-            echo "::set-output name=tag::develop"
+            echo "tag=develop" >> $GITHUB_OUTPUT
             echo "BRANCH_NAME=${BRANCH_NAME}" >> $GITHUB_ENV
-            fi
+          fi
 
       - name: Convert IMAGE_NAME to lowercase
         run: echo "IMAGE_NAME=$(echo ${{ env.IMAGE_NAME }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
@@ -83,32 +83,30 @@ jobs:
             --tag ghcr.io/${{ env.IMAGE_NAME }}:arm64-${{ steps.set_tag.outputs.tag }} \
             --tag ghcr.io/${{ env.IMAGE_NAME }}:arm64-${{ env.BRANCH_NAME }} \
             .
-      - name: Create and push Docker manifest
+       name: Create and push Docker manifest
         run: |
-          # Create and push manifest for docker.io latest/develop tag
-          docker manifest create \
-            docker.io/${{ env.IMAGE_NAME }}:${{ steps.set_tag.outputs.tag }} \
-            docker.io/${{ env.IMAGE_NAME }}:amd64-${{ steps.set_tag.outputs.tag }} \
-            docker.io/${{ env.IMAGE_NAME }}:arm64-${{ steps.set_tag.outputs.tag }}
-          docker manifest push docker.io/${{ env.IMAGE_NAME }}:${{ steps.set_tag.outputs.tag }}
+          # Function to handle manifest operations
+          create_and_push_manifest() {
+            local registry="$1"
+            local tag="$2"
+            
+            echo "Creating manifest for ${registry}/${{ env.IMAGE_NAME }}:${tag}"
+            
+            docker manifest create "${registry}/${{ env.IMAGE_NAME }}:${tag}" \
+              --amend "${registry}/${{ env.IMAGE_NAME }}:amd64-${tag}" \
+              --amend "${registry}/${{ env.IMAGE_NAME }}:arm64-${tag}"
+            
+            docker manifest annotate "${registry}/${{ env.IMAGE_NAME }}:${tag}" \
+              "${registry}/${{ env.IMAGE_NAME }}:amd64-${tag}" --arch amd64
+            
+            docker manifest annotate "${registry}/${{ env.IMAGE_NAME }}:${tag}" \
+              "${registry}/${{ env.IMAGE_NAME }}:arm64-${tag}" --arch arm64
+            
+            docker manifest push "${registry}/${{ env.IMAGE_NAME }}:${tag}"
+          }
 
-          # Create and push manifest for docker.io branch name
-          docker manifest create \
-            docker.io/${{ env.IMAGE_NAME }}:${{ env.BRANCH_NAME }} \
-            docker.io/${{ env.IMAGE_NAME }}:amd64-${{ env.BRANCH_NAME }} \
-            docker.io/${{ env.IMAGE_NAME }}:arm64-${{ env.BRANCH_NAME }}
-          docker manifest push docker.io/${{ env.IMAGE_NAME }}:${{ env.BRANCH_NAME }}
-
-          # Create and push manifest for ghcr.io latest/develop tag
-          docker manifest create \
-            ghcr.io/${{ env.IMAGE_NAME }}:${{ steps.set_tag.outputs.tag }} \
-            ghcr.io/${{ env.IMAGE_NAME }}:amd64-${{ steps.set_tag.outputs.tag }} \
-            ghcr.io/${{ env.IMAGE_NAME }}:arm64-${{ steps.set_tag.outputs.tag }}
-          docker manifest push ghcr.io/${{ env.IMAGE_NAME }}:${{ steps.set_tag.outputs.tag }}
-
-          # Create and push manifest for ghcr.io branch name
-          docker manifest create \
-            ghcr.io/${{ env.IMAGE_NAME }}:${{ env.BRANCH_NAME }} \
-            ghcr.io/${{ env.IMAGE_NAME }}:amd64-${{ env.BRANCH_NAME }} \
-            ghcr.io/${{ env.IMAGE_NAME }}:arm64-${{ env.BRANCH_NAME }}
-          docker manifest push ghcr.io/${{ env.IMAGE_NAME }}:${{ env.BRANCH_NAME }}
+          # Process both registries and tags
+          for registry in "docker.io" "ghcr.io"; do
+            create_and_push_manifest "$registry" "${{ steps.set_tag.outputs.tag }}"
+            create_and_push_manifest "$registry" "${{ env.BRANCH_NAME }}"
+          done
