@@ -73,7 +73,9 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           provenance: true
-          provenance-mode: max
+          attests: |
+            sbom
+            provenance=mode=max
           sbom: true
           cache-from: type=local,src=${{ env.BUILDX_CACHE_DIR }}
           cache-to: type=local,dest=${{ env.BUILDX_CACHE_DIR }}-new,mode=max
