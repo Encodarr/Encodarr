@@ -32,6 +32,7 @@ ENV GOOS=$TARGETOS
 ENV GOARCH=$TARGETARCH
 
 # Install cross-compiler for ARM64 if needed
+RUN apk add --no-cache build-base
 RUN if [ "$TARGETARCH" = "arm64" ]; then \
     apt-get update && apt-get install -y gcc-aarch64-linux-gnu \
     && rm -rf /var/lib/apt/lists/* ; \
@@ -39,7 +40,7 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
     fi
 
 # Build the application
-RUN go build -o /app/transfigurr ./cmd/transfigurr
+RUN CGO_ENABLED=1 go build -o /app/transfigurr ./cmd/transfigurr
 
 # Stage 3: Final image
 FROM alpine:latest
