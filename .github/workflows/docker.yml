@@ -79,12 +79,8 @@ jobs:
           tags: |
             docker.io/${{ env.IMAGE_NAME }}:${{ steps.set_tag.outputs.tag }}
             docker.io/${{ env.IMAGE_NAME }}:${{ env.BRANCH_NAME }}
-            docker.io/${{ env.IMAGE_NAME }}:amd64-${{ env.BRANCH_NAME }}
-            docker.io/${{ env.IMAGE_NAME }}:arm64-${{ env.BRANCH_NAME }}
             ghcr.io/${{ env.IMAGE_NAME }}:${{ steps.set_tag.outputs.tag }}
             ghcr.io/${{ env.IMAGE_NAME }}:${{ env.BRANCH_NAME }}
-            ghcr.io/${{ env.IMAGE_NAME }}:amd64-${{ env.BRANCH_NAME }}
-            ghcr.io/${{ env.IMAGE_NAME }}:arm64-${{ env.BRANCH_NAME }}
 
       - name: Move cache
         run: |
