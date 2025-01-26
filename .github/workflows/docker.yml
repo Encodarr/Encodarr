@@ -72,8 +72,6 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           provenance: true
-          attestations-config: |
-            mode=max
           sbom: true
           cache-from: type=local,src=${{ env.CACHE_PATH }}
           cache-to: type=local,dest=${{ env.CACHE_PATH }},mode=max
