@@ -46,7 +46,6 @@ func parseEpisodeAndSeasonNumber(file string, folder string) (int, int) {
 }
 
 func ScanMovie(movieID string, movieRepo repositories.MovieRepositoryInterface, settingRepo repositories.SettingRepositoryInterface, profileRepo repositories.ProfileRepositoryInterface) {
-
 	if movieID == "" {
 		return
 	}
@@ -141,9 +140,8 @@ func ScanSeries(encodeService services.EncodeServiceInterface, seriesID string, 
 		}
 	}()
 
-	series, err := seriesRepo.GetSeriesByID(seriesID)
-	if err != nil {
-	}
+	series, _ := seriesRepo.GetSeriesByID(seriesID)
+
 	series.MissingEpisodes = 0
 	if series.Id == "" {
 		series.Id = seriesID
@@ -151,11 +149,13 @@ func ScanSeries(encodeService services.EncodeServiceInterface, seriesID string, 
 	seriesPath := filepath.Join(config.SeriesPath, seriesID)
 
 	if _, err := os.Stat(seriesPath); os.IsNotExist(err) {
+		log.Print(err)
 		return
 	}
 
 	defaultProfile, settingsErr := settingRepo.GetSettingById("defaultProfile")
 	if settingsErr != nil {
+		log.Print(settingsErr)
 	}
 	if series.ProfileID == 0 {
 		profileID, _ := strconv.Atoi(defaultProfile.Value)
@@ -163,12 +163,14 @@ func ScanSeries(encodeService services.EncodeServiceInterface, seriesID string, 
 	}
 	profile, profileErr := profileRepo.GetProfileById(series.ProfileID)
 	if profileErr != nil {
+		log.Print(profileErr)
 		return
 	}
 	seasons := make(map[string]*models.Season)
 
-	err = filepath.Walk(seriesPath, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(seriesPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
+			log.Print(err)
 			return err
 		}
 		if info.IsDir() {
@@ -178,15 +180,15 @@ func ScanSeries(encodeService services.EncodeServiceInterface, seriesID string, 
 		seasonNumber, episodeNumber := parseEpisodeAndSeasonNumber(info.Name(), filepath.Dir(path))
 		seasonID := seriesID + strconv.Itoa(seasonNumber)
 
-		episode := &models.Episode{
-			Id:            seriesID + strconv.Itoa(seasonNumber) + strconv.Itoa(episodeNumber),
-			Filename:      info.Name(),
-			Path:          path,
-			Size:          int(info.Size()),
-			EpisodeNumber: episodeNumber,
-			SeasonNumber:  seasonNumber,
-			SeasonId:      seasonID,
-			SeasonName:    filepath.Base(filepath.Dir(path)),
+		episode, err := episodeRepo.GetEpisodeBySeriesSeasonEpisode(seriesID, seasonNumber, episodeNumber)
+		if err != nil {
+			// If episode doesn't exist, create new one with basic info
+			episode = models.Episode{
+				Id:            seriesID + strconv.Itoa(seasonNumber) + strconv.Itoa(episodeNumber),
+				EpisodeNumber: episodeNumber,
+				SeasonNumber:  seasonNumber,
+				SeasonId:      seasonID,
+			}
 		}
 
 		if episode.OriginalSize == 0 {
@@ -195,6 +197,7 @@ func ScanSeries(encodeService services.EncodeServiceInterface, seriesID string, 
 
 		vcodec, err := AnalyzeMediaFile(path)
 		if err != nil {
+			log.Print(err)
 			return nil
 		}
 		episode.VideoCodec = vcodec
@@ -222,12 +225,12 @@ func ScanSeries(encodeService services.EncodeServiceInterface, seriesID string, 
 		if episode.Missing && series.Monitored {
 			encodeService.Enqueue(models.Item{Type: "episode", Id: episode.Id, ProfileId: series.ProfileID, SeriesId: seriesID, SeasonNumber: seasonNumber, EpisodeNumber: episodeNumber, Name: series.Id, Size: episode.Size, Codec: episode.VideoCodec})
 		}
-
-		episodeRepo.UpsertEpisode(seriesID, seasonNumber, episodeNumber, *episode)
+		episodeRepo.UpsertEpisode(seriesID, seasonNumber, episodeNumber, episode)
 
 		return nil
 	})
 	if err != nil {
+		log.Print(err)
 		return
 	}
 
@@ -243,7 +246,6 @@ func ScanSeries(encodeService services.EncodeServiceInterface, seriesID string, 
 		series.Size += season.Size
 		series.SpaceSaved += season.SpaceSaved
 	}
-
 	seriesRepo.UpsertSeries(series.Id, series)
 }
 
@@ -277,24 +279,24 @@ func ScanSystem(seriesRepo repositories.SeriesRepositoryInterface, systemRepo re
 
 	seriesFreeSpace, seriesTotalSpace, err := getDiskSpace(config.SeriesPath)
 	if err != nil {
-		log.Print("seriesDisk", err)
+		log.Print(err)
 		return
 	}
 
 	moviesFreeSpace, moviesTotalSpace, err := getDiskSpace(config.MoviesPath)
 	if err != nil {
-		log.Print("moviesDisk", err)
+		log.Print(err)
 		return
 	}
 	configFreeSpace, configTotalSpace, err := getDiskSpace(config.ConfigPath)
 	if err != nil {
-		log.Print("configDisk", err)
+		log.Print(err)
 		return
 	}
 	transcodeFreeSpace, transcodeTotalSpace, err := getDiskSpace(config.TranscodeFolder)
 
 	if err != nil {
-		log.Print("transDisk", err)
+		log.Print(err)
 		return
 	}
 

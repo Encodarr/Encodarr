@@ -1,18 +1,17 @@
 package repositories
 
 import (
+	"database/sql"
 	"errors"
 	"log"
 	"transfigurr/internal/models"
-
-	"gorm.io/gorm"
 )
 
 type AuthRepository struct {
-	DB *gorm.DB
+	DB *sql.DB
 }
 
-func NewAuthRepository(db *gorm.DB) *AuthRepository {
+func NewAuthRepository(db *sql.DB) *AuthRepository {
 	return &AuthRepository{
 		DB: db,
 	}
@@ -20,41 +19,49 @@ func NewAuthRepository(db *gorm.DB) *AuthRepository {
 
 func (repo *AuthRepository) GetUser() (models.User, error) {
 	var user models.User
+	err := repo.DB.QueryRow(`
+        SELECT id, username, password, secret 
+        FROM users 
+        LIMIT 1
+    `).Scan(&user.Id, &user.Username, &user.Password, &user.Secret)
 
-	if err := repo.DB.First(&user).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return models.User{}, err
-		}
+	if err == sql.ErrNoRows {
+		return models.User{}, errors.New("record not found")
+	}
+	if err != nil {
 		return models.User{}, err
 	}
 	return user, nil
 }
 
 func (repo *AuthRepository) CreateUser(user *models.User) error {
-	if err := repo.DB.Create(user).Error; err != nil {
+	_, err := repo.DB.Exec(`
+        INSERT INTO users (username, password, secret)
+        VALUES (?, ?, ?)`,
+		user.Username, user.Password, user.Secret,
+	)
+	return err
+}
+
+func (repo *AuthRepository) UpdateUser(user *models.User) error {
+	result, err := repo.DB.Exec(`
+        UPDATE users 
+        SET username = ?, password = ?
+        WHERE secret = ?`,
+		user.Username, user.Password, user.Secret,
+	)
+	if err != nil {
+		log.Print("Error updating user:", err)
 		return err
 	}
-	return nil
-}
-func (repo *AuthRepository) UpdateUser(user *models.User) error {
-	var existingUser models.User
 
-	result := repo.DB.Where("secret = ?", user.Secret).First(&existingUser)
-	if result.Error != nil {
-		log.Print("User not found:", result.Error)
-		return result.Error
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return errors.New("user not found")
 	}
 
-	// Update the existing user with new values
-	existingUser.Username = user.Username
-	existingUser.Password = user.Password
-
-	// Save the updated user
-	// Update with WHERE condition
-	return repo.DB.Model(&existingUser).
-		Where("secret = ?", existingUser.Secret).
-		Updates(map[string]interface{}{
-			"username": user.Username,
-			"password": user.Password,
-		}).Error
+	return nil
 }

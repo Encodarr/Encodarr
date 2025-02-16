@@ -1,14 +1,12 @@
 package controllers
 
 import (
+	"database/sql"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"transfigurr/internal/interfaces/repositories"
 	"transfigurr/internal/interfaces/services"
 	"transfigurr/internal/models"
-
-	"gorm.io/gorm"
 )
 
 type MovieController struct {
@@ -26,7 +24,11 @@ func NewMovieController(repo repositories.MovieRepositoryInterface, scanService 
 func (ctrl *MovieController) GetMovies(w http.ResponseWriter, r *http.Request) {
 	movieList, err := ctrl.Repo.GetMovies()
 	if err != nil {
-		http.Error(w, "Error retrieving movies", http.StatusInternalServerError)
+		if err == sql.ErrNoRows {
+			http.Error(w, "No movies found", http.StatusNotFound)
+		} else {
+			http.Error(w, "Error retrieving movies", http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -56,7 +58,7 @@ func (ctrl *MovieController) UpsertMovie(w http.ResponseWriter, r *http.Request,
 func (ctrl *MovieController) GetMovieByID(w http.ResponseWriter, r *http.Request, movieId string) {
 	movie, err := ctrl.Repo.GetMovieById(movieId)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if err == sql.ErrNoRows {
 			http.Error(w, "Movie not found", http.StatusNotFound)
 		} else {
 			http.Error(w, "Error retrieving movie", http.StatusInternalServerError)
@@ -71,7 +73,11 @@ func (ctrl *MovieController) GetMovieByID(w http.ResponseWriter, r *http.Request
 func (ctrl *MovieController) DeleteMovieByID(w http.ResponseWriter, r *http.Request, movieId string) {
 	err := ctrl.Repo.DeleteMovieById(movieId)
 	if err != nil {
-		http.Error(w, "Error deleting movie", http.StatusInternalServerError)
+		if err == sql.ErrNoRows {
+			http.Error(w, "Movie not found", http.StatusNotFound)
+		} else {
+			http.Error(w, "Error deleting movie", http.StatusInternalServerError)
+		}
 		return
 	}
 

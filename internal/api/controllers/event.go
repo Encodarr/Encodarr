@@ -1,13 +1,11 @@
 package controllers
 
 import (
+	"database/sql"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"transfigurr/internal/interfaces/repositories"
 	"transfigurr/internal/models"
-
-	"gorm.io/gorm"
 )
 
 type EventController struct {
@@ -23,7 +21,7 @@ func NewEventController(repo repositories.EventRepositoryInterface) *EventContro
 func (ctrl EventController) GetEvents(w http.ResponseWriter, r *http.Request) {
 	events, err := ctrl.Repo.GetEvents()
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if err == sql.ErrNoRows {
 			http.Error(w, "Events not found", http.StatusNotFound)
 		} else {
 			http.Error(w, "Error retrieving events", http.StatusInternalServerError)
@@ -42,7 +40,7 @@ func (ctrl EventController) UpsertEvent(w http.ResponseWriter, r *http.Request, 
 	}
 
 	event, err := ctrl.Repo.GetEventById(eventId)
-	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+	if err != nil && err == sql.ErrNoRows {
 		event = inputEvent
 	} else if err != nil {
 		http.Error(w, "Error retrieving event", http.StatusInternalServerError)
@@ -60,7 +58,7 @@ func (ctrl EventController) UpsertEvent(w http.ResponseWriter, r *http.Request, 
 func (ctrl EventController) GetEventById(w http.ResponseWriter, r *http.Request, eventId string) {
 	event, err := ctrl.Repo.GetEventById(eventId)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if err == sql.ErrNoRows {
 			http.Error(w, "Event not found", http.StatusNotFound)
 		} else {
 			http.Error(w, "Error retrieving event", http.StatusInternalServerError)
@@ -74,7 +72,11 @@ func (ctrl EventController) GetEventById(w http.ResponseWriter, r *http.Request,
 func (ctrl EventController) DeleteEventById(w http.ResponseWriter, r *http.Request, eventId string) {
 	event, err := ctrl.Repo.GetEventById(eventId)
 	if err != nil {
-		http.Error(w, "Event not found", http.StatusNotFound)
+		if err == sql.ErrNoRows {
+			http.Error(w, "Event not found", http.StatusNotFound)
+		} else {
+			http.Error(w, "Error retrieving event", http.StatusInternalServerError)
+		}
 		return
 	}
 

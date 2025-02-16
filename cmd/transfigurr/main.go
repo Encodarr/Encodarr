@@ -13,8 +13,8 @@ import (
 )
 
 func main() {
-	sqlDB, services, repositories := startup.Startup()
-	defer sqlDB.Close()
+	db, services, repositories := startup.Startup()
+	defer db.Close()
 
 	// Create server mux
 	mux := http.NewServeMux()

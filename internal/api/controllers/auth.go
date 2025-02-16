@@ -106,6 +106,7 @@ func (ctrl *AuthController) LoginToken(w http.ResponseWriter, r *http.Request) {
 	user, err := ctrl.Repo.GetUser()
 	if err != nil && user.Username == "" && user.Password == "" {
 		http.Error(w, "You must register first", http.StatusForbidden)
+		log.Print(err)
 		return
 	}
 

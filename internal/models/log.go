@@ -1,9 +1,9 @@
 package models
 
 type Log struct {
-	ID        uint   `gorm:"primary_key"`
-	Timestamp string `gorm:"type:datetime"`
-	Level     string `gorm:"type:varchar(10)"`
-	Service   string `gorm:"type:varchar(50)"`
-	Message   string `gorm:"type:text"`
+	ID        uint   `json:"id"`
+	Timestamp string `json:"timestamp"`
+	Level     string `json:"level"`
+	Service   string `json:"service"`
+	Message   string `json:"message"`
 }

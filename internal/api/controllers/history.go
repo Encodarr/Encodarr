@@ -1,13 +1,11 @@
 package controllers
 
 import (
+	"database/sql"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"transfigurr/internal/interfaces/repositories"
 	"transfigurr/internal/models"
-
-	"gorm.io/gorm"
 )
 
 type HistoryController struct {
@@ -23,7 +21,7 @@ func NewHistoryController(repo repositories.HistoryRepositoryInterface) *History
 func (ctrl HistoryController) GetHistories(w http.ResponseWriter, r *http.Request) {
 	histories, err := ctrl.Repo.GetHistories()
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if err == sql.ErrNoRows {
 			http.Error(w, "Histories not found", http.StatusNotFound)
 		} else {
 			http.Error(w, "Error retrieving histories", http.StatusInternalServerError)
@@ -38,7 +36,7 @@ func (ctrl HistoryController) GetHistories(w http.ResponseWriter, r *http.Reques
 func (ctrl HistoryController) GetHistoryById(w http.ResponseWriter, r *http.Request, historyId string) {
 	history, err := ctrl.Repo.GetHistoryById(historyId)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if err == sql.ErrNoRows {
 			http.Error(w, "History not found", http.StatusNotFound)
 		} else {
 			http.Error(w, "Error retrieving history", http.StatusInternalServerError)

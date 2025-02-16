@@ -1,12 +1,11 @@
 package repositories
 
 import (
+	"database/sql"
 	"transfigurr/internal/types"
-
-	"gorm.io/gorm"
 )
 
-func NewRepositories(db *gorm.DB) *types.Repositories {
+func NewRepositories(db *sql.DB) *types.Repositories {
 	return &types.Repositories{
 		SeriesRepo:  NewSeriesRepository(db),
 		SeasonRepo:  NewSeasonRepository(db),

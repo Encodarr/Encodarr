@@ -1,14 +1,13 @@
 package models
 
 type Season struct {
-	BaseModel
-	Id              string    `gorm:"primary_key" json:"id"`
-	Name            string    `gorm:"type:varchar(255)" json:"name"`
-	SeasonNumber    int       `gorm:"type:int" json:"seasonNumber"`
-	EpisodeCount    int       `gorm:"type:int" json:"episodeCount"`
-	Size            int       `gorm:"type:int" json:"size"`
-	SeriesId        string    `gorm:"type:varchar(255)" json:"seriesId"`
-	SpaceSaved      int       `gorm:"type:varchar(255)" json:"spaceSaved"`
-	MissingEpisodes int       `gorm:"type:int" json:"missingEpisodes"`
-	Episodes        []Episode `gorm:"foreignkey:SeasonId" json:"episodes"`
+	Id              string    `json:"id"`
+	Name            string    `json:"name"`
+	SeasonNumber    int       `json:"seasonNumber"`
+	EpisodeCount    int       `json:"episodeCount"`
+	Size            int       `json:"size"`
+	SeriesId        string    `json:"seriesId"`
+	SpaceSaved      int       `json:"spaceSaved"`
+	MissingEpisodes int       `json:"missingEpisodes"`
+	Episodes        []Episode `json:"episodes"`
 }

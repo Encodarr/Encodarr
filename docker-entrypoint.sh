@@ -2,6 +2,11 @@
 PUID=${PUID:-1000}
 PGID=${PGID:-1000}
 
+# Create control files if they don't exist
+touch /config/restart.txt /config/shutdown.txt
+chown $PUID:$PGID /config/restart.txt /config/shutdown.txt
+chmod 666 /config/restart.txt /config/shutdown.txt
+
 start_app() {
     if id -u $PUID > /dev/null 2>&1 && id -g $PGID > /dev/null 2>&1; then
         chown -R $PUID:$PGID /config /movies /series /transcode

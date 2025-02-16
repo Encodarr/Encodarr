@@ -1,68 +1,123 @@
 package repositories
 
 import (
-	"errors"
+	"database/sql"
 	"transfigurr/internal/models"
-
-	"gorm.io/gorm"
 )
 
 type MovieRepository struct {
-	DB *gorm.DB
+	DB *sql.DB
 }
 
-func NewMovieRepository(db *gorm.DB) *MovieRepository {
+func NewMovieRepository(db *sql.DB) *MovieRepository {
 	return &MovieRepository{
 		DB: db,
 	}
 }
 
 func (repo *MovieRepository) GetMovies() ([]models.Movie, error) {
-	var movieList []models.Movie
-	if err := repo.DB.Find(&movieList).Error; err != nil {
+	rows, err := repo.DB.Query(`
+        SELECT id, name, release_date, genre, status,
+        filename, video_codec, overview, size, space_saved,
+        profile_id, monitored, missing, studio,
+        original_size, path, runtime
+        FROM movies
+    `)
+	if err != nil {
 		return nil, err
 	}
-	return movieList, nil
+	defer rows.Close()
+
+	var movies []models.Movie
+	for rows.Next() {
+		var movie models.Movie
+		err := rows.Scan(
+			&movie.Id, &movie.Name, &movie.ReleaseDate,
+			&movie.Genre, &movie.Status, &movie.Filename,
+			&movie.VideoCodec, &movie.Overview, &movie.Size,
+			&movie.SpaceSaved, &movie.ProfileID, &movie.Monitored,
+			&movie.Missing, &movie.Studio, &movie.OriginalSize,
+			&movie.Path, &movie.Runtime,
+		)
+		if err != nil {
+			return nil, err
+		}
+		movies = append(movies, movie)
+	}
+	return movies, nil
 }
 
 func (repo *MovieRepository) UpsertMovie(id string, movie models.Movie) (models.Movie, error) {
-	var existingMovie models.Movie
-	if err := repo.DB.Where("id = ?", id).First(&existingMovie).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			// If the movie does not exist, create a new one
-			if err := repo.DB.Create(&movie).Error; err != nil {
-				return models.Movie{}, err
-			}
-			return movie, nil
-		}
+	var exists bool
+	err := repo.DB.QueryRow("SELECT EXISTS(SELECT 1 FROM movies WHERE id = ?)", id).Scan(&exists)
+	if err != nil {
 		return models.Movie{}, err
 	}
 
-	// If the movie exists, update it
-	if err := repo.DB.Model(&existingMovie).Select("*").Updates(movie).Error; err != nil {
+	if exists {
+		_, err = repo.DB.Exec(`
+            UPDATE movies SET
+            name = ?, release_date = ?, genre = ?,
+            status = ?, filename = ?, video_codec = ?,
+            overview = ?, size = ?, space_saved = ?,
+            profile_id = ?, monitored = ?, missing = ?,
+            studio = ?, original_size = ?, path = ?,
+            runtime = ?
+            WHERE id = ?`,
+			movie.Name, movie.ReleaseDate, movie.Genre,
+			movie.Status, movie.Filename, movie.VideoCodec,
+			movie.Overview, movie.Size, movie.SpaceSaved,
+			movie.ProfileID, movie.Monitored, movie.Missing,
+			movie.Studio, movie.OriginalSize, movie.Path,
+			movie.Runtime, id,
+		)
+	} else {
+		_, err = repo.DB.Exec(`
+            INSERT INTO movies (
+                id, name, release_date, genre, status,
+                filename, video_codec, overview, size,
+                space_saved, profile_id, monitored,
+                missing, studio, original_size,
+                path, runtime
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			id, movie.Name, movie.ReleaseDate, movie.Genre,
+			movie.Status, movie.Filename, movie.VideoCodec,
+			movie.Overview, movie.Size, movie.SpaceSaved,
+			movie.ProfileID, movie.Monitored, movie.Missing,
+			movie.Studio, movie.OriginalSize, movie.Path,
+			movie.Runtime,
+		)
+	}
+	if err != nil {
 		return models.Movie{}, err
 	}
-	return existingMovie, nil
+
+	return repo.GetMovieById(id)
 }
 
 func (repo *MovieRepository) GetMovieById(id string) (models.Movie, error) {
 	var movie models.Movie
-	if err := repo.DB.Where("id = ?", id).First(&movie).Error; err != nil {
+	err := repo.DB.QueryRow(`
+        SELECT id, name, release_date, genre, status,
+        filename, video_codec, overview, size, space_saved,
+        profile_id, monitored, missing, studio,
+        original_size, path, runtime
+        FROM movies WHERE id = ?`, id,
+	).Scan(
+		&movie.Id, &movie.Name, &movie.ReleaseDate,
+		&movie.Genre, &movie.Status, &movie.Filename,
+		&movie.VideoCodec, &movie.Overview, &movie.Size,
+		&movie.SpaceSaved, &movie.ProfileID, &movie.Monitored,
+		&movie.Missing, &movie.Studio, &movie.OriginalSize,
+		&movie.Path, &movie.Runtime,
+	)
+	if err != nil {
 		return models.Movie{}, err
 	}
 	return movie, nil
 }
 
 func (repo *MovieRepository) DeleteMovieById(id string) error {
-	var movie models.Movie
-	if err := repo.DB.Where("id = ?", id).First(&movie).Error; err != nil {
-		return err
-	}
-
-	db := repo.DB.Delete(&movie)
-	if db.Error != nil {
-		return db.Error
-	}
-
-	return nil
+	_, err := repo.DB.Exec("DELETE FROM movies WHERE id = ?", id)
+	return err
 }

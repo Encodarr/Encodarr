@@ -1,6 +1,7 @@
 package router
 
 import (
+	"log"
 	"net/http"
 	"transfigurr/internal/api/handlers"
 	"transfigurr/internal/router/middleware"
@@ -23,7 +24,7 @@ func SetupRouter(mux *http.ServeMux, services *types.Services, repositories *typ
 
 	user, err := repositories.UserRepo.GetUser()
 	if err != nil {
-		panic(err)
+		log.Print("Failed to get user")
 	}
 	jwtSecret := []byte(user.Secret)
 
