@@ -126,13 +126,3 @@ func isApplied(applied []string, name string) bool {
 	}
 	return false
 }
-
-func (m *MigrationService) isDatabaseLocked(ctx context.Context) bool {
-	var dummy int
-	err := m.db.QueryRowContext(ctx, "SELECT 1").Scan(&dummy)
-	if err != nil {
-		log.Printf("Database lock check failed: %v", err)
-		return true
-	}
-	return false
-}
