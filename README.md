@@ -30,15 +30,22 @@
 
 Docker manifest is utilized for multi-platform awareness. More information is available from docker [here](https://distribution.github.io/distribution/spec/manifest-v2-2/#manifest-list).
 
-Simply pulling `transfigurr/transfigurr:latest` should retrieve the correct image for your arch, but you can also pull specific arch images via tags.
+Simply pulling `transfigurr/transfigurr:latest` should retrieve the correct image for your arch.
 
 The architectures supported by this image are:
 
-| Architecture | Available | Tag                     |
-| :----------: | :-------: | ----------------------- |
-|    x86-64    |    ✅     | amd64-\<version tag\>   |
-|    arm64     |    ✅     | arm64v8-\<version tag\> |
-|    armhf     |    ❌     |                         |
+| Architecture | Available | Platform Flag |
+| :----------: | :-------: | ------------- |
+|    x86-64    |    ✅     | linux/amd64   |
+|    arm64     |    ✅     | linux/arm64   |
+|    armhf     |    ❌     |               |
+
+<strong>Advanced:</strong> You can also pull an arch manually via the platform flag.
+
+```
+docker pull --platform linux/amd64 transfigurr/transfigurr:latest
+docker pull --platform linux/arm64 transfigurr/transfigurr:latest
+```
 
 ## Version Tags
 

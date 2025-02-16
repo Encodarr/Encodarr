@@ -50,9 +50,7 @@ func (s *ScanService) EnqueueAllMovies() {
 	if err != nil {
 		log.Print(err)
 	}
-	log.Print("Scanning movies...")
 	for _, file := range movieFiles {
-		log.Print(file.Name())
 		s.Enqueue(models.Item{Id: file.Name(), Type: "movie"})
 	}
 	for _, movieItem := range movies {
@@ -105,7 +103,6 @@ func (s *ScanService) process() {
 
 func (s *ScanService) processItem(item models.Item) {
 	if item.Type == "movie" {
-		log.Print("Scanning movie: ", item.Id)
 		utils.ScanMovie(item.Id, s.repositories.MovieRepo, s.repositories.SettingRepo, s.repositories.ProfileRepo)
 		utils.ValidateMovie(item.Id, s.repositories.MovieRepo)
 		movie, err := s.repositories.MovieRepo.GetMovieById(item.Id)

@@ -1,30 +1,34 @@
 package repositories
 
 import (
+	"database/sql"
 	"transfigurr/internal/models"
-
-	"gorm.io/gorm"
 )
 
 type SettingRepository struct {
-	DB *gorm.DB
+	DB *sql.DB
 }
 
-func NewSettingRepository(db *gorm.DB) *SettingRepository {
+func NewSettingRepository(db *sql.DB) *SettingRepository {
 	return &SettingRepository{
 		DB: db,
 	}
 }
 
 func (repo *SettingRepository) GetAllSettings() (map[string]models.Setting, error) {
-	var settings []models.Setting
-	err := repo.DB.Find(&settings).Error
+	rows, err := repo.DB.Query("SELECT id, value FROM settings")
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	settingMap := make(map[string]models.Setting)
-	for _, setting := range settings {
+	for rows.Next() {
+		var setting models.Setting
+		err := rows.Scan(&setting.Id, &setting.Value)
+		if err != nil {
+			return nil, err
+		}
 		settingMap[setting.Id] = setting
 	}
 
@@ -33,18 +37,28 @@ func (repo *SettingRepository) GetAllSettings() (map[string]models.Setting, erro
 
 func (repo *SettingRepository) GetSettingById(id string) (models.Setting, error) {
 	var setting models.Setting
-	err := repo.DB.Where("id = ?", id).First(&setting).Error
+	err := repo.DB.QueryRow("SELECT id, value FROM settings WHERE id = ?", id).
+		Scan(&setting.Id, &setting.Value)
 	return setting, err
 }
 
 func (repo *SettingRepository) CreateSetting(setting models.Setting) error {
-	return repo.DB.Create(&setting).Error
+	_, err := repo.DB.Exec(
+		"INSERT INTO settings (id, value) VALUES (?, ?)",
+		setting.Id, setting.Value,
+	)
+	return err
 }
 
 func (repo *SettingRepository) UpdateSetting(setting models.Setting) error {
-	return repo.DB.Save(&setting).Select("*").Error
+	_, err := repo.DB.Exec(
+		"UPDATE settings SET value = ? WHERE id = ?",
+		setting.Value, setting.Id,
+	)
+	return err
 }
 
 func (repo *SettingRepository) DeleteSetting(setting models.Setting) error {
-	return repo.DB.Delete(&setting).Error
+	_, err := repo.DB.Exec("DELETE FROM settings WHERE id = ?", setting.Id)
+	return err
 }

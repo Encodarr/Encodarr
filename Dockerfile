@@ -7,7 +7,7 @@ COPY frontend/ ./
 RUN npm run build
 
 # Stage 2: Build the Go backend
-FROM golang:1.23.4-alpine AS backend
+FROM golang:1.24.0-alpine AS backend
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
@@ -34,8 +34,6 @@ RUN addgroup -g 1000 nonroot && \
     /series \
     /transcode \
     /app/frontend && \
-    touch /config/restart.txt /config/shutdown.txt && \
-    chmod 666 /config/restart.txt /config/shutdown.txt && \
     chown -R nonroot:nonroot \
     /app \
     /config \

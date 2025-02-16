@@ -105,14 +105,23 @@ func (s *MetadataService) processItem(item models.Item) {
 		series, err := s.seriesRepo.GetSeriesByID(item.Id)
 		if err != nil {
 		}
-		series, err = utils.GetSeriesMetadata(series)
+		seriesMeta, err := utils.GetSeriesMetadata(series)
 		if err != nil {
 			log.Print(err)
 		}
 
+		series.Name = seriesMeta.Name
+		series.Overview = seriesMeta.Overview
+		series.ReleaseDate = seriesMeta.ReleaseDate
+		series.Genre = seriesMeta.Genre
+		series.Status = seriesMeta.Status
+		series.Networks = seriesMeta.Networks
+		series.Runtime = seriesMeta.Runtime
 		s.seriesRepo.UpsertSeries(series.Id, series)
 		for _, season := range series.Seasons {
-			for _, episode := range season.Episodes {
+			for index, episode := range season.Episodes {
+				episode.EpisodeName = seriesMeta.Seasons[season.SeasonNumber-1].Episodes[index].EpisodeName
+				episode.AirDate = seriesMeta.Seasons[season.SeasonNumber-1].Episodes[index].AirDate
 				s.episodeRepo.UpsertEpisode(series.Id, season.SeasonNumber, episode.EpisodeNumber, episode)
 			}
 		}
